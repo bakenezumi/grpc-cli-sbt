@@ -4,7 +4,11 @@ import java.util.concurrent.TimeUnit
 import java.util.logging.Logger
 
 import com.github.bakenezumi.grpccli.ServerReflectionGrpc.ServerReflectionStub
-import com.github.bakenezumi.grpccli.protobuf.{ProtoMethodName, ServiceResolver}
+import com.github.bakenezumi.grpccli.protobuf.{
+  ProtoMethodName,
+  ProtobufFormat,
+  ServiceResolver
+}
 import com.google.protobuf.DescriptorProtos.{
   FileDescriptorProto,
   FileDescriptorSet
@@ -86,23 +90,15 @@ class GrpcClient private (
         .map(_.getName)
     )
 
-    def serviceDetail(serviceName: String): Future[String] = {
+    def serviceDetail(serviceName: String): Future[Seq[String]] = {
       getFileDescriptorProtoList(serviceName).map(
         _.flatMap(file =>
           file.getServiceList.asScala.map { serviceDescriptor =>
             (file.getName, file.getPackage, serviceDescriptor)
-        }).find {
-            case (_, pkg, serviceDescriptor) =>
-              if (serviceNameParameter.isEmpty)
-                serviceName.startsWith(
-                  formatPackage(pkg) + serviceDescriptor.getName)
-              else
-                serviceNameParameter.startsWith(
-                  formatPackage(pkg) + serviceDescriptor.getName)
-          }
+        }).headOption
           .flatMap {
             case (file, pkg, serviceDescriptor) =>
-              // print service
+              // print services
               if (serviceNameParameter.isEmpty || serviceNameParameter
                     .endsWith(serviceDescriptor.getName))
                 Some(
@@ -110,14 +106,15 @@ class GrpcClient private (
                     case ServiceListFormat.SHORT =>
                       serviceDescriptor.getMethodList.asScala.toList
                         .map(_.getName)
-                        .mkString(System.lineSeparator)
                     case ServiceListFormat.LONG =>
-                      s"""|filename: "$file"
-                          |package: "$pkg"
-                          |$serviceDescriptor""".stripMargin // TODO: to protobuf format
+                      Seq(
+                        s"""|filename: "$file"
+                            |package: "$pkg"
+                            |$serviceDescriptor""".stripMargin // TODO: to protobuf format
+                      )
                   }
                 )
-              // print method
+              // print methods
               else {
                 serviceDescriptor.getMethodList.asScala
                   .find(method =>
@@ -125,13 +122,13 @@ class GrpcClient private (
                   .map(method =>
                     format match {
                       case ServiceListFormat.SHORT =>
-                        method.getName
+                        Seq(method.getName)
                       case ServiceListFormat.LONG =>
-                        method.toString // TODO: to protobuf format
+                        Seq(method.toString) // TODO: to protobuf format
                   })
               }
           }
-          .getOrElse("")
+          .getOrElse(Nil)
       )
     }
 
@@ -140,15 +137,16 @@ class GrpcClient private (
         if (serviceNameParameter.isEmpty)
           serviceNamesFuture
         else
-          serviceDetail(serviceNameParameter).map(s => Seq(s))
+          serviceDetail(serviceNameParameter)
 
       case ServiceListFormat.LONG =>
         serviceNamesFuture.flatMap { serviceNames =>
-          val futures = serviceNames.map(serviceDetail)
+          val futures =
+            serviceNames.map(serviceDetail)
 
-          Future.foldLeft[String, Seq[String]](futures)(Seq[String]()) {
-            (acc: Seq[String], v: String) =>
-              if (v.nonEmpty) acc ++ Seq(v) else acc
+          Future.foldLeft[Seq[String], Seq[String]](futures)(Seq[String]()) {
+            (acc: Seq[String], v: Seq[String]) =>
+              if (v.nonEmpty) acc ++ v else acc
           }
         }
     }
@@ -165,7 +163,8 @@ class GrpcClient private (
               .collect {
                 case (_, pkg, descriptor)
                     if typeName == formatPackage(pkg) + descriptor.getName =>
-                  descriptor.toString // TODO: to protobuf format
+                  ProtobufFormat
+                    .print(descriptor)
             }
         ))
   }
