@@ -108,9 +108,10 @@ class GrpcClient private (
                         .map(_.getName)
                     case ServiceListFormat.LONG =>
                       Seq(
-                        s"""|filename: "$file"
-                            |package: "$pkg"
-                            |$serviceDescriptor""".stripMargin // TODO: to protobuf format
+                        s"""|filename: $file
+                            |package: $pkg;
+                            |${ProtobufFormat
+                             .print(serviceDescriptor)}""".stripMargin
                       )
                   }
                 )
@@ -124,7 +125,8 @@ class GrpcClient private (
                       case ServiceListFormat.SHORT =>
                         Seq(method.getName)
                       case ServiceListFormat.LONG =>
-                        Seq(method.toString) // TODO: to protobuf format
+                        Seq("  " + ProtobufFormat
+                          .print(method) + System.lineSeparator)
                   })
               }
           }

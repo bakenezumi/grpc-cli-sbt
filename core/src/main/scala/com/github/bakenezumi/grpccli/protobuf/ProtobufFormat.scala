@@ -46,7 +46,36 @@ object ProtobufFormat {
       case FieldDescriptorProto.Label.LABEL_REQUIRED => "required "
       case FieldDescriptorProto.Label.LABEL_REPEATED => "repeated "
     }
-    val typeName = field.getType match {
+
+    s"""$label${typeName(field.getType, field.getTypeName)} ${field.getName} = ${field.getNumber}${if (field.hasJsonName)
+         s"""[json_name = "${field.getJsonName}"]"""
+       else ""};""".stripMargin
+
+  }
+
+  def print(service: ServiceDescriptorProto): String = {
+    val methods = service.getMethodList.asScala.toList
+    s"""|service ${service.getName} {
+        |  ${methods
+         .map(print)
+         .mkString(System.lineSeparator + "  ")}
+        |}
+        |""".stripMargin
+  }
+
+  def print(method: MethodDescriptorProto): String = {
+    def fixTypeName(name: String): String = {
+      if (name.head == '.') name.tail else name
+    }
+
+    s"""rpc ${method.getName}(${if (method.hasClientStreaming) "stream " else ""}${fixTypeName(
+      method.getInputType)}) returns (${if (method.hasServerStreaming)
+      "stream "
+    else ""}${fixTypeName(method.getOutputType)}) {}"""
+  }
+
+  def typeName(tpe: FieldDescriptorProto.Type, typeName: String): String =
+    tpe match {
       case FieldDescriptorProto.Type.TYPE_DOUBLE   => "double"
       case FieldDescriptorProto.Type.TYPE_FLOAT    => "float"
       case FieldDescriptorProto.Type.TYPE_INT64    => "int64"
@@ -63,15 +92,11 @@ object ProtobufFormat {
       case FieldDescriptorProto.Type.TYPE_SINT32   => "sint32"
       case FieldDescriptorProto.Type.TYPE_SINT64   => "sint64"
 
-      case FieldDescriptorProto.Type.TYPE_ENUM    => field.getTypeName
-      case FieldDescriptorProto.Type.TYPE_GROUP   => field.getTypeName
-      case FieldDescriptorProto.Type.TYPE_MESSAGE => field.getTypeName
+      case FieldDescriptorProto.Type.TYPE_ENUM    => typeName
+      case FieldDescriptorProto.Type.TYPE_GROUP   => typeName
+      case FieldDescriptorProto.Type.TYPE_MESSAGE => typeName
 
-      case _ => field.getTypeName
+      case _ => typeName
     }
-    s"""$label$typeName ${field.getName} = ${field.getNumber}${if (field.hasJsonName)
-         s"""[json_name = "${field.getJsonName}"]"""
-       else ""};""".stripMargin
 
-  }
 }

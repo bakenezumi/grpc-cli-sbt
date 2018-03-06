@@ -23,6 +23,27 @@ class GrpcClientTestSuite extends AsyncFunSuite with BeforeAndAfterAll {
     future.map(ret => assert(ret == Seq("SayHello")))
   }
 
+  test("ls -l") {
+    val service = "grpc.reflection.v1alpha.ServerReflection"
+    val future = client.getServiceList(service, format = ServiceListFormat.LONG)
+    future.map(ret =>
+      assert(ret == Seq("""|filename: io/grpc/reflection/v1alpha/reflection.proto
+                           |package: grpc.reflection.v1alpha;
+                           |service ServerReflection {
+                           |  rpc ServerReflectionInfo(stream grpc.reflection.v1alpha.ServerReflectionRequest) returns (stream grpc.reflection.v1alpha.ServerReflectionResponse) {}
+                           |}
+                           |""".stripMargin)))
+  }
+
+  test("ls -l method") {
+    val service =
+      "grpc.reflection.v1alpha.ServerReflection.ServerReflectionInfo"
+    val future = client.getServiceList(service, format = ServiceListFormat.LONG)
+    future.map(ret =>
+      assert(ret == Seq("""|  rpc ServerReflectionInfo(stream grpc.reflection.v1alpha.ServerReflectionRequest) returns (stream grpc.reflection.v1alpha.ServerReflectionResponse) {}
+                           |""".stripMargin)))
+  }
+
   test("type") {
     val tpe = "helloworld.HelloRequest"
     val future = client.getType(tpe)
