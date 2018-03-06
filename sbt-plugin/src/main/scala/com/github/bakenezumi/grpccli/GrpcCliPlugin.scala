@@ -31,6 +31,8 @@ object GrpcCliPlugin extends AutoPlugin {
                 println(s"Type $typeName not found.")
               case result => result.foreach(println)
             }
+          case call @ CallCommand(method) =>
+            call.apply(getOpt(grpcServerAddress).get)
         }
         state
     }

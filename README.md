@@ -46,7 +46,14 @@ sbt:your-project> grpc-cli type helloworld.HelloRequest
 
 ### Call a remote method
 
-Not Implemented (yet)
+```
+sbt:your-project> grpc-cli call helloworld.Greeter.SayHello
+reading request message from stdin...
+{name:"gRPC CLI"}
+
+```
+output: `message: "Hello gRPC CLI"`
+
 
 License
 --------

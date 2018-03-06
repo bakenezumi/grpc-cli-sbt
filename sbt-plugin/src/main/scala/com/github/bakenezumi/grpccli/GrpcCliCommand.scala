@@ -11,15 +11,39 @@ case class LsCommand(method: String = "",
     extends GrpcCliCommand {
   def apply(address: String): Seq[String] = {
     val Array(host: String, port: String) = address.split(":")
-    val future = GrpcClient(host, port.toInt).getServiceList(method, format)
-    Await.result(future, 5 second)
+    val client = GrpcClient(host, port.toInt)
+    try {
+      val future = client.getServiceList(method, format)
+      Await.result(future, 5 second)
+    } finally {
+      client.shutdown()
+    }
   }
 }
 
 case class TypeCommand(typeName: String) extends GrpcCliCommand {
   def apply(address: String): Seq[String] = {
     val Array(host: String, port: String) = address.split(":")
-    val future = GrpcClient(host, port.toInt).getType(typeName)
-    Await.result(future, 5 second)
+    val client = GrpcClient(host, port.toInt)
+    try {
+      val future = client.getType(typeName)
+      Await.result(future, 5 second)
+    } finally {
+      client.shutdown()
+    }
+  }
+}
+
+case class CallCommand(method: String) extends GrpcCliCommand {
+  def apply(address: String): Unit = {
+    val Array(host: String, port: String) = address.split(":")
+    val client = GrpcClient(host, port.toInt)
+    try {
+      val future = client.callDynamic(method)
+      Await.result(future, 5 second)
+    } finally {
+      client.shutdown()
+    }
+
   }
 }

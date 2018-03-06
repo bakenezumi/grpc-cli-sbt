@@ -9,7 +9,7 @@ object GrpcCliCommandParser {
 
   val NotFlag = Space ~> NotHyphen ~ NotSpace
 
-  lazy val grpcCliCommand = Space ~> (ls | ls_l | tpe)
+  lazy val grpcCliCommand = Space ~> (ls | ls_l | tpe | call)
 
   lazy val ls =
     (token("ls") ~> (OptSpace || NotFlag) <~ OptSpace)
@@ -33,8 +33,15 @@ object GrpcCliCommandParser {
         case (head, tail) => TypeCommand(head + tail)
       }
 
+  lazy val call =
+    (token("call") ~> NotFlag)
+      .map {
+        case (head, tail) => CallCommand(head + tail)
+      }
+
   val help =
     Help.briefOnly(
       Seq(("grpc-cli ls ...", "List services"),
+          ("grpc_cli call ...", "Call method"),
           ("grpc_cli type ...", "Print type")))
 }

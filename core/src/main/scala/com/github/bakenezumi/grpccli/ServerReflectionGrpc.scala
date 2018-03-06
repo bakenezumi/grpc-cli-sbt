@@ -12,7 +12,7 @@ import io.grpc.stub.{AbstractStub, ClientCalls, StreamObserver}
 import scalapb.grpc.{AbstractService, ServiceCompanion}
 
 object ServerReflectionGrpc {
-  val METHOD_SERVER_REFLECTION_INFO
+  private[this] val METHOD_SERVER_REFLECTION_INFO
     : MethodDescriptor[ServerReflectionRequest, ServerReflectionResponse] =
     MethodDescriptor
       .newBuilder()

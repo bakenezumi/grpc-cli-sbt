@@ -4,45 +4,32 @@ import java.util.concurrent.TimeUnit
 import java.util.logging.Logger
 
 import com.github.bakenezumi.grpccli.ServerReflectionGrpc.ServerReflectionStub
-import com.google.protobuf.DescriptorProtos.FileDescriptorProto
+import com.github.bakenezumi.grpccli.protobuf.{ProtoMethodName, ServiceResolver}
+import com.google.protobuf.DescriptorProtos.{
+  FileDescriptorProto,
+  FileDescriptorSet
+}
+import com.google.protobuf.DynamicMessage
+import com.google.protobuf.util.JsonFormat.TypeRegistry
 import io.grpc.reflection.v1alpha.{
   ServerReflectionRequest,
   ServerReflectionResponse
 }
 import io.grpc.stub.StreamObserver
-import io.grpc.{ManagedChannel, ManagedChannelBuilder}
+import io.grpc.{CallOptions, ManagedChannel, ManagedChannelBuilder}
 
 import scala.collection.JavaConverters._
 import scala.concurrent.duration._
 import scala.concurrent.{Await, ExecutionContext, Future, Promise}
+import scala.language.postfixOps
 
 object GrpcClient {
   def apply(host: String, port: Int)(
       implicit executorContext: ExecutionContext): GrpcClient = {
     val channel =
       ManagedChannelBuilder.forAddress(host, port).usePlaintext(true).build
-    val asyncStub = ServerReflectionGrpc.stub(channel)
-    new GrpcClient(channel, asyncStub)
-  }
-
-  def main(args: Array[String]): Unit = {
-    import scala.concurrent.ExecutionContext.Implicits.global
-    val client = GrpcClient("localhost", 50051)
-    try {
-//      val future = client.getServiceList(service, ServiceListFormat.SHORT)
-//      val future = client.getType(service)
-
-      //val tpe = args.headOption.getOrElse("helloworld.HelloRequest")
-      val tpe = args.headOption.getOrElse(
-        "grpc.reflection.v1alpha.ServerReflectionResponse")
-
-      val future = client.getType(tpe)
-
-      val ret = Await.result(future, 5 second)
-      println(ret)
-    } finally {
-      client.shutdown()
-    }
+    val serverReflectionStub = ServerReflectionGrpc.stub(channel)
+    new GrpcClient(channel, serverReflectionStub)
   }
 
 }
@@ -58,7 +45,7 @@ class GrpcClient private (
     channel.shutdown.awaitTermination(5, TimeUnit.SECONDS)
   }
 
-  private def callServer[RETURN](
+  private def callServerReflection[RETURN](
       request: ServerReflectionRequest,
       handler: ServerReflectionResponse => RETURN): Future[RETURN] = {
 
@@ -91,7 +78,7 @@ class GrpcClient private (
   def getServiceList(serviceNameParameter: String = "",
                      format: ServiceListFormat = ServiceListFormat.SHORT)
     : Future[Seq[String]] = {
-    val serviceNamesFuture = callServer(
+    val serviceNamesFuture = callServerReflection(
       ServerReflectionRequest.newBuilder
         .setListServices(serviceNameParameter)
         .build,
@@ -115,6 +102,7 @@ class GrpcClient private (
           }
           .flatMap {
             case (file, pkg, serviceDescriptor) =>
+              // print service
               if (serviceNameParameter.isEmpty || serviceNameParameter
                     .endsWith(serviceDescriptor.getName))
                 Some(
@@ -122,13 +110,14 @@ class GrpcClient private (
                     case ServiceListFormat.SHORT =>
                       serviceDescriptor.getMethodList.asScala.toList
                         .map(_.getName)
-                        .mkString("\n")
+                        .mkString(System.lineSeparator)
                     case ServiceListFormat.LONG =>
                       s"""|filename: "$file"
                           |package: "$pkg"
                           |$serviceDescriptor""".stripMargin // TODO: to protobuf format
                   }
                 )
+              // print method
               else {
                 serviceDescriptor.getMethodList.asScala
                   .find(method =>
@@ -170,7 +159,7 @@ class GrpcClient private (
     getFileDescriptorProtoList(typeName)
       .map(
         _.flatMap(
-          file =>
+          (file: FileDescriptorProto) =>
             file.getMessageTypeList.asScala
               .map(descriptor => (file.getName, file.getPackage, descriptor))
               .collect {
@@ -183,11 +172,66 @@ class GrpcClient private (
 
   def getFileDescriptorProtoList(
       symbol: String): Future[Seq[FileDescriptorProto]] = {
-    callServer(
+    callServerReflection(
       ServerReflectionRequest.newBuilder.setFileContainingSymbol(symbol).build,
       _.getFileDescriptorResponse.getFileDescriptorProtoList.asScala
         .map(FileDescriptorProto.parseFrom)
     )
+  }
+
+  private def formatMethodName(methodName: String): String =
+    if (methodName.contains('/')) methodName
+    else {
+      val words = methodName.split("\\.").toList
+      if (words.isEmpty) methodName
+      else words.init.mkString(".") + "/" + words.last
+    }
+
+  def callDynamic(methodName: String): Future[Unit] = {
+    val fileDescriptors =
+      Await.result(getFileDescriptorProtoList(methodName), 5 second)
+
+    val descriptorSet = FileDescriptorSet
+      .newBuilder()
+      .addAllFile(fileDescriptors.asJava)
+      .build()
+    val serviceResolver =
+      ServiceResolver.fromFileDescriptorSet(descriptorSet)
+    val protoMethodName =
+      ProtoMethodName.parseFullGrpcMethodName(formatMethodName(methodName))
+    val methodDescriptor =
+      serviceResolver.resolveServiceMethod(protoMethodName)
+    val dynamicClient = DynamicGrpcClient(methodDescriptor, channel)
+    val registry = TypeRegistry
+      .newBuilder()
+      .add(serviceResolver.listMessageTypes.asJava)
+      .build()
+
+    val requestMessages =
+      MessageReader.forStdin(methodDescriptor.getInputType, registry).read
+
+    val p = Promise[Unit]()
+
+    dynamicClient.call(
+      requestMessages,
+      new StreamObserver[DynamicMessage] {
+        override def onNext(v: DynamicMessage): Unit = {
+          println(v.toString)
+        }
+
+        override def onError(throwable: Throwable): Unit = {
+          logger.warning(throwable.getLocalizedMessage)
+          p.failure(throwable)
+        }
+
+        override def onCompleted(): Unit = {
+          p.success()
+        }
+
+      },
+      CallOptions.DEFAULT
+    )
+    p.future
   }
 
 }

@@ -1,4 +1,4 @@
-package com.github.bakenezumi.grpccli
+package com.github.bakenezumi.grpccli.protobuf
 
 import com.google.protobuf.DescriptorProtos._
 
