@@ -29,7 +29,7 @@ class DynamicGrpcClient private[grpccli] (
   /**
     * Makes an rpc to the remote endpoint and respects the supplied callback. Returns a future which
     * terminates once the call has ended. For calls which are single-request, this throws
-    * {@link IllegalArgumentException} if the size of {@code requests} is not exactly 1.
+    * `IllegalArgumentException` if the size of `requests` is not exactly 1.
     */
   def call(requests: List[DynamicMessage],
            responseObserver: StreamObserver[DynamicMessage],
@@ -116,13 +116,15 @@ class DynamicGrpcClient private[grpccli] (
   private def createCall(callOptions: CallOptions) =
     channel.newCall(createGrpcMethodDescriptor, callOptions)
 
-  private def createGrpcMethodDescriptor =
-    io.grpc.MethodDescriptor.create[DynamicMessage, DynamicMessage](
-      getMethodType,
-      getFullMethodName,
-      new DynamicMessageMarshaller(protoMethodDescriptor.getInputType),
-      new DynamicMessageMarshaller(protoMethodDescriptor.getOutputType)
-    )
+  private def createGrpcMethodDescriptor = {
+    io.grpc.MethodDescriptor
+      .newBuilder(
+        new DynamicMessageMarshaller(protoMethodDescriptor.getInputType),
+        new DynamicMessageMarshaller(protoMethodDescriptor.getOutputType))
+      .setType(getMethodType)
+      .setFullMethodName(getFullMethodName)
+      .build()
+  }
 
   private def getFullMethodName = {
     val serviceName = protoMethodDescriptor.getService.getFullName

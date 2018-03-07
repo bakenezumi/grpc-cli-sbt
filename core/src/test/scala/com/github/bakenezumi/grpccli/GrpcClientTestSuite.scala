@@ -98,7 +98,7 @@ class GrpcClientTestSuite extends AsyncFunSuite with BeforeAndAfterAll {
 }
 
 class MockStandartInputStream(mockString: String) extends InputStream {
-  var buffer = new StringBuilder()
+  val buffer = new StringBuilder()
   buffer.append(mockString)
   override def read(): Int = {
     if (buffer.isEmpty) return -1

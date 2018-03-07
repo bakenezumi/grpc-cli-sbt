@@ -19,20 +19,20 @@ case class LsCommand(method: String = "",
     extends GrpcCliCommand {
   def apply(address: String): Seq[String] = using(address) { client =>
     val future = client.getServiceList(method, format)
-    Await.result(future, 5 second)
+    Await.result(future, Duration(5, SECONDS))
   }
 }
 
 case class TypeCommand(typeName: String) extends GrpcCliCommand {
   def apply(address: String): Seq[String] = using(address) { client =>
     val future = client.getType(typeName)
-    Await.result(future, 5 second)
+    Await.result(future, Duration(5, SECONDS))
   }
 }
 
 case class CallCommand(method: String) extends GrpcCliCommand {
   def apply(address: String): Unit = using(address) { client =>
     val future = client.callDynamic(method)
-    Await.result(future, 5 second)
+    Await.result(future, Duration(5, SECONDS))
   }
 }

@@ -4,7 +4,7 @@ import com.google.protobuf.DescriptorProtos._
 
 import scala.collection.JavaConverters._
 
-/** Print [[com.google.protobuf.DescriptorProtos]] to .proto version proto3 format */
+/** Print `com.google.protobuf.DescriptorProtos._` to .proto version proto3 format */
 object ProtobufFormat {
 
   def print(message: DescriptorProto): String = {

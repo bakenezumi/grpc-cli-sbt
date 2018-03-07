@@ -18,7 +18,7 @@ import scala.collection.JavaConverters._
 /** [[https://github.com/grpc-ecosystem/polyglot/blob/master/src/main/java/me/dinowernli/grpc/polyglot/protobuf/ServiceResolver.java]] */
 object ServiceResolver {
 
-  /** Creates a resolver which searches the supplied {@link FileDescriptorSet}. */
+  /** Creates a resolver which searches the supplied `FileDescriptorSet`. */
   def fromFileDescriptorSet(
       descriptorSet: FileDescriptorSet): ServiceResolver = {
     val descriptorProtoIndex = computeDescriptorProtoIndex(descriptorSet)
@@ -46,7 +46,7 @@ object ServiceResolver {
 
   /**
     * Recursively constructs file descriptors for all dependencies of the supplied proto and returns
-    * a {@link FileDescriptor} for the supplied proto itself. For maximal efficiency, reuse the
+    * a `FileDescriptor` for the supplied proto itself. For maximal efficiency, reuse the
     * descriptorCache argument across calls.
     */
   private def descriptorFromProto(
@@ -77,7 +77,7 @@ object ServiceResolver {
 
 class ServiceResolver private (fileDescriptors: List[FileDescriptor]) {
 
-  private val logger = Logger.getLogger(classOf[ServiceResolver].getName)
+//  private val logger = Logger.getLogger(classOf[ServiceResolver].getName)
 
   /** Lists all of the services found in the file descriptors */
   def listServices: Iterable[ServiceDescriptor] = {
@@ -91,7 +91,7 @@ class ServiceResolver private (fileDescriptors: List[FileDescriptor]) {
 
   /**
     * Returns the descriptor of a protobuf method with the supplied grpc method name. If the method
-    * cannot be found, this throws {@link IllegalArgumentException}.
+    * cannot be found, this throws `java.lang.IllegalArgumentException`.
     */
   def resolveServiceMethod(method: ProtoMethodName): MethodDescriptor =
     resolveServiceMethod(method.serviceName,

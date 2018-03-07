@@ -28,7 +28,8 @@ object ServerReflectionGrpc {
       .build()
 
   trait ServerReflection extends AbstractService {
-    override def serviceCompanion = ServerReflection
+    override def serviceCompanion: ServiceCompanion[ServerReflection] =
+      ServerReflection
     def serverReflectionInfo(
         responseObserver: StreamObserver[ServerReflectionResponse])
       : StreamObserver[ServerReflectionRequest]
@@ -42,7 +43,7 @@ object ServerReflectionGrpc {
   }
 
   trait ServerReflectionBlockingClient {
-    def serviceCompanion = ServerReflection
+    def serviceCompanion: ServiceCompanion[ServerReflection] = ServerReflection
   }
 
   class ServerReflectionBlockingStub(channel: Channel,

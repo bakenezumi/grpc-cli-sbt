@@ -25,7 +25,6 @@ import io.grpc.{CallOptions, ManagedChannel, ManagedChannelBuilder}
 import scala.collection.JavaConverters._
 import scala.concurrent.duration._
 import scala.concurrent.{Await, ExecutionContext, Future, Promise}
-import scala.language.postfixOps
 
 object GrpcClient {
   def apply(host: String, port: Int)(
@@ -199,7 +198,7 @@ class GrpcClient private (
     * */
   def callDynamic(methodName: String): Future[Unit] = {
     val fileDescriptors =
-      Await.result(getFileDescriptorProtoList(methodName), 5 second)
+      Await.result(getFileDescriptorProtoList(methodName), Duration(5, SECONDS))
 
     val descriptorSet = FileDescriptorSet
       .newBuilder()
@@ -235,7 +234,7 @@ class GrpcClient private (
         }
 
         override def onCompleted(): Unit = {
-          p.success()
+          p.success(())
         }
 
       },

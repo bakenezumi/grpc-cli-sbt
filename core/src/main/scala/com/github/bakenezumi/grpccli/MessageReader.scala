@@ -13,7 +13,7 @@ import scala.collection.mutable.ArrayBuffer
 
 object MessageReader {
 
-  /** Creates a {@link MessageReader} which reads messages from stdin. */
+  /** Creates a [[com.github.bakenezumi.grpccli.MessageReader MessageReader]] which reads messages from stdin. */
   def forStdin(descriptor: Descriptor,
                registry: JsonFormat.TypeRegistry): MessageReader = {
     val reader = new BufferedReader(new InputStreamReader(System.in))
@@ -23,7 +23,7 @@ object MessageReader {
                       "STDIN")
   }
 
-  /** Creates a {@link MessageReader} which reads the messages from a file. */
+  /** Creates a [[com.github.bakenezumi.grpccli.MessageReader MessageReader]] which reads the messages from a file. */
   def forFile(path: Path, descriptor: Descriptor): MessageReader =
     forFile(path, descriptor, TypeRegistry.getEmptyTypeRegistry)
 

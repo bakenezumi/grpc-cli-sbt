@@ -11,7 +11,12 @@ val commonSettings = Seq(
   fork in Test := true,
   scalaVersion := "2.12.4",
   organization := "com.github.bakenezumi",
-  version := "0.1.0-SNAPSHOT"
+  version := "0.1.0-SNAPSHOT",
+  scalacOptions ++= Seq(
+    "-deprecation",
+    "-feature",
+    "-unchecked"
+  )
 )
 
 lazy val root = (project in file(".")).settings(
