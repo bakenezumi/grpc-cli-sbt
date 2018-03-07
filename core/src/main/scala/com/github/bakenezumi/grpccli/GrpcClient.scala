@@ -120,7 +120,8 @@ class GrpcClient private (
               else {
                 serviceDescriptor.getMethodList.asScala
                   .find(method =>
-                    serviceNameParameter == formatPackage(pkg) + serviceDescriptor.getName + "." + method.getName)
+                    serviceNameParameter == formatPackage(pkg) + serviceDescriptor.getName + "." + method.getName ||
+                      serviceNameParameter == formatPackage(pkg) + serviceDescriptor.getName + "/" + method.getName)
                   .map(method =>
                     format match {
                       case ServiceListFormat.SHORT =>

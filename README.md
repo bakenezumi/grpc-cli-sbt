@@ -25,7 +25,7 @@ After enabling server reflection in a server application, you can use gRPC CLI t
 
 ```sh
 $ sbt
-sbt:your-project> set grpcServerAddress  := "localhost:50051"
+sbt:your-project> set gRPCEndpoint := "localhost:50051"
 sbt:your-project> grpc-cli ls
 ```
 

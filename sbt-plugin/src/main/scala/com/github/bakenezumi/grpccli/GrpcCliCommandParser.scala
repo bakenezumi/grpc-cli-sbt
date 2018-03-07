@@ -1,45 +1,50 @@
 package com.github.bakenezumi.grpccli
 
-import sbt.Help
-
 import sbt.internal.util.complete.DefaultParsers._
 
-object GrpcCliCommandParser {
-  val NotHyphen = charClass(c => c != '-' && c != ' ')
+trait GrpcCliCommandParser {
 
-  val NotFlag = (Space ~> NotHyphen ~ NotSpace).map {
+  // Implementation required
+  val serviceList: Seq[String]
+  val methodList: Seq[String]
+
+  lazy val NotHyphen = charClass(c => c != '-' && !c.isWhitespace)
+
+  lazy val NotFlag = (NotHyphen ~ NotSpace).map {
     case (head, tail) => head + tail
   }
 
-  lazy val grpcCliCommand = Space ~> (ls | ls_l | tpe | call)
+  lazy val GrpcCliCommand = Space ~> (ls | tpe | call)
+
+  lazy val KnownService = {
+    NotFlag.examples(serviceList ++ methodList: _*)
+  }
+
+  lazy val KnownMethod = {
+    NotFlag.examples(methodList: _*)
+  }
+
+  lazy val OptService = (Space ~> KnownService).?
 
   lazy val ls =
-    (token("ls") ~> (OptSpace || NotFlag) <~ OptSpace)
+    (token("ls") ~> token(Space ~> "-l").? ~ OptService ~ token(Space ~> "-l").?)
       .map {
-        case Left(_)        => LsCommand()
-        case Right(service) => LsCommand(service)
+        case ((None, None), None)          => LsCommand()
+        case ((None, Some(service)), None) => LsCommand(service)
+        case ((Some(_), None), _)          => LsCommand("", ServiceListFormat.LONG)
+        case ((Some(_), Some(service)), _) =>
+          LsCommand(service, ServiceListFormat.LONG)
+        case ((_, None), Some(_)) => LsCommand("", ServiceListFormat.LONG)
+        case ((_, Some(service)), Some(_)) =>
+          LsCommand(service, ServiceListFormat.LONG)
       }
 
-  lazy val ls_l =
-    (
-      (token("ls") ~> Space ~> token("-l") ~> (OptSpace || NotFlag)) |
-        (token("ls") ~> (OptSpace || NotFlag) <~ Space <~ token("-l") <~ OptSpace)
-    ).map {
-      case Left(_)        => LsCommand("", ServiceListFormat.LONG)
-      case Right(service) => LsCommand(service, ServiceListFormat.LONG)
-    }
-
   lazy val tpe =
-    (token("type") ~> NotFlag)
+    (token("type") ~> Space ~> NotFlag)
       .map(tpe_ => TypeCommand(tpe_))
 
   lazy val call =
-    (token("call") ~> NotFlag)
+    (token("call") ~> Space ~> (NotFlag | KnownMethod))
       .map(service => CallCommand(service))
 
-  val help =
-    Help.briefOnly(
-      Seq(("grpc-cli ls ...", "List services"),
-          ("grpc_cli call ...", "Call method"),
-          ("grpc_cli type ...", "Print type")))
 }
