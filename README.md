@@ -13,7 +13,7 @@ This is implemented to conform to the [original specifications](https://github.c
 The command line tool can do the following things:
 
 - Send unary rpc.
-- Attach metadata and display received metadata.
+- ~~Attach metadata and~~(yet) display received metadata.
 - ~~Handle common authentication to server.~~(yet)
 - Infer request/response types from server reflection result.
 - ~~Find the request/response types from a given proto file.~~(yet)
