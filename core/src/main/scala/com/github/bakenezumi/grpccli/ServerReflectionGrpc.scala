@@ -9,7 +9,6 @@ import io.grpc.reflection.v1alpha.{
   ServerReflectionResponse
 }
 import io.grpc.stub.{AbstractStub, ClientCalls, StreamObserver}
-import scalapb.grpc.{AbstractService, ServiceCompanion}
 
 object ServerReflectionGrpc {
   private[this] val METHOD_SERVER_REFLECTION_INFO
@@ -27,32 +26,16 @@ object ServerReflectionGrpc {
         ProtoUtils.marshaller(ServerReflectionResponse.getDefaultInstance))
       .build()
 
-  trait ServerReflection extends AbstractService {
-    override def serviceCompanion: ServiceCompanion[ServerReflection] =
-      ServerReflection
+  trait ServerReflection {
     def serverReflectionInfo(
         responseObserver: StreamObserver[ServerReflectionResponse])
       : StreamObserver[ServerReflectionRequest]
   }
 
-  object ServerReflection extends ServiceCompanion[ServerReflection] {
-    implicit def serviceCompanion: ServiceCompanion[ServerReflection] = this
+  object ServerReflection {
     def javaDescriptor: Descriptors.ServiceDescriptor =
       ServerReflectionProto.getDescriptor.getServices
         .get(0)
-  }
-
-  trait ServerReflectionBlockingClient {
-    def serviceCompanion: ServiceCompanion[ServerReflection] = ServerReflection
-  }
-
-  class ServerReflectionBlockingStub(channel: Channel,
-                                     options: CallOptions = CallOptions.DEFAULT)
-      extends AbstractStub[ServerReflectionBlockingStub](channel, options)
-      with ServerReflectionBlockingClient {
-    override def build(channel: Channel,
-                       options: CallOptions): ServerReflectionBlockingStub =
-      new ServerReflectionBlockingStub(channel, options)
   }
 
   class ServerReflectionStub(channel: Channel,
@@ -71,9 +54,6 @@ object ServerReflectionGrpc {
                        options: CallOptions): ServerReflectionStub =
       new ServerReflectionStub(channel, options)
   }
-
-  def blockingStub(channel: Channel): ServerReflectionBlockingStub =
-    new ServerReflectionBlockingStub(channel)
 
   def stub(channel: Channel): ServerReflectionStub =
     new ServerReflectionStub(channel)

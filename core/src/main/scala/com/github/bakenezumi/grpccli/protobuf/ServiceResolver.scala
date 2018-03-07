@@ -1,7 +1,5 @@
 package com.github.bakenezumi.grpccli.protobuf
 
-import java.util.logging.Logger
-
 import com.google.protobuf.DescriptorProtos.{
   FileDescriptorProto,
   FileDescriptorSet

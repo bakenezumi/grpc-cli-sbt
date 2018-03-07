@@ -1,6 +1,6 @@
-import scalapb.compiler.Version.{grpcJavaVersion, protobufVersion, scalapbVersion}
-
 import sbt._
+
+val grpcJavaVersion = "1.10.0"
 
 val unusedWarnings =
   "-Ywarn-unused" ::
@@ -32,7 +32,6 @@ lazy val core = (project in file("core")).settings(
     "io.grpc" % "grpc-stub" % grpcJavaVersion ::
     "io.grpc" % "grpc-services" % grpcJavaVersion ::
     "io.grpc" % "grpc-netty" % grpcJavaVersion ::
-    "com.thesamet.scalapb" %% "scalapb-runtime-grpc" % scalapbVersion ::
     "org.scalatest" %% "scalatest" % "3.0.5" % Test ::
     Nil,
 )
