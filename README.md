@@ -14,13 +14,13 @@ The command line tool can do the following things:
 
 - Send unary rpc.
 - Attach metadata and display received metadata.
-- ~~Handle common authentication to server.~~(not yet)
+- ~~Handle common authentication to server.~~(yet)
 - Infer request/response types from server reflection result.
-- ~~Find the request/response types from a given proto file.~~(not yet)
+- ~~Find the request/response types from a given proto file.~~(yet)
 - Read proto request in text form.
-- ~~Read request in wire form (for protobuf messages, this means serialized binary form).~~(not yet)
+- ~~Read request in wire form (for protobuf messages, this means serialized binary form).~~(yet)
 - Display proto response in text form.
-- ~~(not yet)Write response in wire form to a file.~~(not yet)
+- ~~(not yet)Write response in wire form to a file.~~(yet)
 
 ### Setup
 
@@ -140,7 +140,7 @@ full name of the type (in the format of \<package\>.\<type\>).
 
 ### Call a remote method
 
-We can send RPCs to a server and get responses using `grpc_cli call` command.
+We can send RPCs to a server and get responses using `grpc-cli call` command.
 
 - Call a unary method Send a rpc to a helloworld
 
