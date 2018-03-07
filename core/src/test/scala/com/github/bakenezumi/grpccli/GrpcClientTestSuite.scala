@@ -16,7 +16,7 @@ class GrpcClientTestSuite extends AsyncFunSuite with BeforeAndAfterAll {
   }
 
   test("ls") {
-    val service = "helloworld.Greeter/SayHello"
+    val service = "helloworld.Greeter.SayHello"
     val future = client.getServiceList(service)
     future.map(ret => assert(ret == Seq("SayHello")))
   }
