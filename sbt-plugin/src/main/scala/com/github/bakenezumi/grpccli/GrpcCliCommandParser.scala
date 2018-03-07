@@ -7,15 +7,17 @@ import sbt.internal.util.complete.DefaultParsers._
 object GrpcCliCommandParser {
   val NotHyphen = charClass(c => c != '-' && c != ' ')
 
-  val NotFlag = Space ~> NotHyphen ~ NotSpace
+  val NotFlag = (Space ~> NotHyphen ~ NotSpace).map {
+    case (head, tail) => head + tail
+  }
 
   lazy val grpcCliCommand = Space ~> (ls | ls_l | tpe | call)
 
   lazy val ls =
     (token("ls") ~> (OptSpace || NotFlag) <~ OptSpace)
       .map {
-        case Left(_)             => LsCommand()
-        case Right((head, tail)) => LsCommand(head + tail)
+        case Left(_)        => LsCommand()
+        case Right(service) => LsCommand(service)
       }
 
   lazy val ls_l =
@@ -23,21 +25,17 @@ object GrpcCliCommandParser {
       (token("ls") ~> Space ~> token("-l") ~> (OptSpace || NotFlag)) |
         (token("ls") ~> (OptSpace || NotFlag) <~ Space <~ token("-l") <~ OptSpace)
     ).map {
-      case Left(_)             => LsCommand("", ServiceListFormat.LONG)
-      case Right((head, tail)) => LsCommand(head + tail, ServiceListFormat.LONG)
+      case Left(_)        => LsCommand("", ServiceListFormat.LONG)
+      case Right(service) => LsCommand(service, ServiceListFormat.LONG)
     }
 
   lazy val tpe =
     (token("type") ~> NotFlag)
-      .map {
-        case (head, tail) => TypeCommand(head + tail)
-      }
+      .map(tpe_ => TypeCommand(tpe_))
 
   lazy val call =
     (token("call") ~> NotFlag)
-      .map {
-        case (head, tail) => CallCommand(head + tail)
-      }
+      .map(service => CallCommand(service))
 
   val help =
     Help.briefOnly(
