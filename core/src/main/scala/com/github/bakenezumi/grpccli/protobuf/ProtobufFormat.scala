@@ -65,14 +65,20 @@ object ProtobufFormat {
   }
 
   def print(method: MethodDescriptorProto): String = {
-    def fixTypeName(name: String): String = {
-      if (name.head == '.') name.tail else name
-    }
+    val inputTypeName = fixTypeName(method.getInputType)
+    val outputTypeName = fixTypeName(method.getOutputType)
 
-    s"""rpc ${method.getName}(${if (method.hasClientStreaming) "stream " else ""}${fixTypeName(
-      method.getInputType)}) returns (${if (method.hasServerStreaming)
+    // Cache a printed type name
+    PrintedTypeNameCache.put(inputTypeName)
+    PrintedTypeNameCache.put(outputTypeName)
+
+    s"""rpc ${method.getName}(${if (method.hasClientStreaming) "stream " else ""}$inputTypeName) returns (${if (method.hasServerStreaming)
       "stream "
-    else ""}${fixTypeName(method.getOutputType)}) {}"""
+    else ""}$outputTypeName) {}"""
+  }
+
+  def fixTypeName(name: String): String = {
+    if (name.head == '.') name.tail else name
   }
 
   def typeName(tpe: FieldDescriptorProto.Type, typeName: String): String =
@@ -95,7 +101,10 @@ object ProtobufFormat {
 
       case FieldDescriptorProto.Type.TYPE_ENUM    => typeName
       case FieldDescriptorProto.Type.TYPE_GROUP   => typeName
-      case FieldDescriptorProto.Type.TYPE_MESSAGE => typeName
+      case FieldDescriptorProto.Type.TYPE_MESSAGE =>
+        // Cache a printed type name
+        PrintedTypeNameCache.put(fixTypeName(typeName))
+        typeName
 
       case _ => typeName
     }

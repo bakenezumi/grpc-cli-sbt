@@ -1,5 +1,6 @@
 package com.github.bakenezumi.grpccli
 
+import com.github.bakenezumi.grpccli.protobuf.PrintedTypeNameCache
 import sbt.internal.util.complete.DefaultParsers._
 
 trait GrpcCliCommandParser {
@@ -39,8 +40,12 @@ trait GrpcCliCommandParser {
           LsCommand(service, ServiceListFormat.LONG)
       }
 
+  lazy val PrintedType = {
+    NotFlag.examples(PrintedTypeNameCache.getAll: _*)
+  }
+
   lazy val tpe =
-    (token("type") ~> Space ~> NotFlag)
+    (token("type") ~> Space ~> PrintedType)
       .map(tpe_ => TypeCommand(tpe_))
 
   lazy val call =

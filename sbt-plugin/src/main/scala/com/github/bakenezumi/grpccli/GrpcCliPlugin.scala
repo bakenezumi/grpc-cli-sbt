@@ -1,5 +1,6 @@
 package com.github.bakenezumi.grpccli
 
+import com.github.bakenezumi.grpccli.protobuf.PrintedTypeNameCache
 import sbt.Keys._
 import sbt._
 
@@ -63,6 +64,7 @@ object GrpcCliPlugin extends AutoPlugin {
     commands += autoImport.grpcCli,
     gRPCServiceList := {
       try {
+        PrintedTypeNameCache.clear()
         LsCommand().apply(autoImport.gRPCEndpoint.value)
       } catch {
         case _: _root_.io.grpc.StatusRuntimeException =>
