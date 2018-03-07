@@ -4,8 +4,9 @@ import com.google.protobuf.DescriptorProtos._
 
 import scala.collection.JavaConverters._
 
-// TODO: WIP
+/** Print [[com.google.protobuf.DescriptorProtos]] to .proto version proto3 format */
 object ProtobufFormat {
+
   def print(message: DescriptorProto): String = {
     val fields: List[FieldDescriptorProto] =
       message.getFieldList.asScala.toList

@@ -79,6 +79,8 @@ class GrpcClient private (
     if (packageName.isEmpty) ""
     else packageName + "."
 
+  /** Get a list of service
+    * */
   def getServiceList(serviceNameParameter: String = "",
                      format: ServiceListFormat = ServiceListFormat.SHORT)
     : Future[Seq[String]] = {
@@ -98,7 +100,7 @@ class GrpcClient private (
         }).headOption
           .flatMap {
             case (file, pkg, serviceDescriptor) =>
-              // print services
+              // print service
               if (serviceNameParameter.isEmpty || serviceNameParameter
                     .endsWith(serviceDescriptor.getName))
                 Some(
@@ -136,11 +138,14 @@ class GrpcClient private (
 
     format match {
       case ServiceListFormat.SHORT =>
+        // ls
         if (serviceNameParameter.isEmpty)
           serviceNamesFuture
+        // ls service
         else
           serviceDetail(serviceNameParameter)
 
+      // ls -l
       case ServiceListFormat.LONG =>
         serviceNamesFuture.flatMap { serviceNames =>
           val futures =
@@ -155,6 +160,8 @@ class GrpcClient private (
 
   }
 
+  /** get a message type
+    * */
   def getType(typeName: String): Future[Seq[String]] = {
     getFileDescriptorProtoList(typeName)
       .map(
@@ -188,6 +195,8 @@ class GrpcClient private (
       else words.init.mkString(".") + "/" + words.last
     }
 
+  /** call gRPC service method
+    * */
   def callDynamic(methodName: String): Future[Unit] = {
     val fileDescriptors =
       Await.result(getFileDescriptorProtoList(methodName), 5 second)

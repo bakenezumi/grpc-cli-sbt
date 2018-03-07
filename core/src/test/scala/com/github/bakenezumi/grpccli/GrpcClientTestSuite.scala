@@ -4,8 +4,6 @@ import java.io.InputStream
 
 import org.scalatest.{AsyncFunSuite, BeforeAndAfterAll}
 
-import scala.collection.mutable.ArrayBuffer
-
 // To run this test, please use server reflection of
 // https://github.com/grpc/grpc-java/blob/master/examples/src/main/java/io/grpc/examples/helloworld/HelloWorldServer.java
 // You need to enable it and start it up in advance.
@@ -21,6 +19,12 @@ class GrpcClientTestSuite extends AsyncFunSuite with BeforeAndAfterAll {
     val service = "helloworld.Greeter.SayHello"
     val future = client.getServiceList(service)
     future.map(ret => assert(ret == Seq("SayHello")))
+  }
+
+  test("ls not found") {
+    val service = "not.found"
+    val future = client.getServiceList(service)
+    future.map(ret => assert(ret == Nil))
   }
 
   test("ls -l") {
@@ -73,6 +77,12 @@ class GrpcClientTestSuite extends AsyncFunSuite with BeforeAndAfterAll {
                  |  }
                  |}
                  |""".stripMargin.replace("\r", ""))))
+  }
+
+  test("type not found") {
+    val tpe = "not.found"
+    val future = client.getType(tpe)
+    future.map(ret => assert(ret == Nil))
   }
 
   test("call") {

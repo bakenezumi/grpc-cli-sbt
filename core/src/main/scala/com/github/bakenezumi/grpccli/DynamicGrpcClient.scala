@@ -11,7 +11,7 @@ import io.grpc.MethodDescriptor.MethodType
 import io.grpc.stub.{ClientCalls, StreamObserver}
 import io.grpc.{CallOptions, Channel}
 
-/** [[https://github.com/grpc-ecosystem/polyglot/blob/master/src/main/java/me/dinowernli/grpc/polyglot/grpc/DynamicGrpcClient.java]]
+/** Copy from [[https://github.com/grpc-ecosystem/polyglot/blob/v1.6.0/src/main/java/me/dinowernli/grpc/polyglot/grpc/DynamicGrpcClient.java]]
   * */
 object DynamicGrpcClient {
   def apply(protoMethodDescriptor: MethodDescriptor,
