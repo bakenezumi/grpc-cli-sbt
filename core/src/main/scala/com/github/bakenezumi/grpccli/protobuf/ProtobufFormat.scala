@@ -54,6 +54,13 @@ object ProtobufFormat {
 
   }
 
+  def print(file: FileDescriptorProto,
+            service: ServiceDescriptorProto): String = {
+    s"""|filename: ${file.getName}
+        |package: ${file.getPackage};
+        |${print(service)}""".stripMargin
+  }
+
   def print(service: ServiceDescriptorProto): String = {
     val methods = service.getMethodList.asScala.toList
     s"""|service ${service.getName} {

@@ -11,7 +11,9 @@ import com.github.bakenezumi.grpccli.protobuf.{
 }
 import com.google.protobuf.DescriptorProtos.{
   FileDescriptorProto,
-  FileDescriptorSet
+  FileDescriptorSet,
+  MethodDescriptorProto,
+  ServiceDescriptorProto
 }
 import com.google.protobuf.DynamicMessage
 import com.google.protobuf.util.JsonFormat.TypeRegistry
@@ -83,79 +85,82 @@ class GrpcClient private (
   def getServiceList(serviceNameParameter: String = "",
                      format: ServiceListFormat = ServiceListFormat.SHORT)
     : Future[Seq[String]] = {
-    val serviceNamesFuture = callServerReflection(
-      ServerReflectionRequest.newBuilder
-        .setListServices(serviceNameParameter)
-        .build,
-      _.getListServicesResponse.getServiceList.asScala.toList
-        .map(_.getName)
+
+    val serviceNamesFuture = () =>
+      callServerReflection(
+        ServerReflectionRequest.newBuilder
+          .setListServices(serviceNameParameter)
+          .build,
+        _.getListServicesResponse.getServiceList.asScala.toList
+          .map(_.getName)
     )
 
-    def serviceDetail(serviceName: String): Future[Seq[String]] = {
-      getFileDescriptorProtoList(serviceName).map(
-        _.flatMap(file =>
-          file.getServiceList.asScala.map { serviceDescriptor =>
-            (file.getName, file.getPackage, serviceDescriptor)
-        }).headOption
-          .flatMap {
-            case (file, pkg, serviceDescriptor) =>
-              // print service
-              if (serviceNameParameter.isEmpty || serviceNameParameter
-                    .endsWith(serviceDescriptor.getName))
-                Some(
-                  format match {
-                    case ServiceListFormat.SHORT =>
-                      serviceDescriptor.getMethodList.asScala.toList
-                        .map(_.getName)
-                    case ServiceListFormat.LONG =>
-                      Seq(
-                        s"""|filename: $file
-                            |package: $pkg;
-                            |${ProtobufFormat
-                             .print(serviceDescriptor)}""".stripMargin
-                      )
-                  }
-                )
-              // print methods
-              else {
-                serviceDescriptor.getMethodList.asScala
-                  .find(method =>
-                    serviceNameParameter == formatPackage(pkg) + serviceDescriptor.getName + "." + method.getName ||
-                      serviceNameParameter == formatPackage(pkg) + serviceDescriptor.getName + "/" + method.getName)
-                  .map(method =>
-                    format match {
-                      case ServiceListFormat.SHORT =>
-                        Seq(method.getName)
-                      case ServiceListFormat.LONG =>
-                        Seq("  " + ProtobufFormat
-                          .print(method) + System.lineSeparator)
-                  })
-              }
-          }
-          .getOrElse(Nil)
-      )
-    }
+    def handlerBuilder(serviceHandler: (
+                           (FileDescriptorProto,
+                            ServiceDescriptorProto) => Seq[String]),
+                       methodHandler: MethodDescriptorProto => Seq[String]) =
+      (fileDescriptorProto: FileDescriptorProto,
+       serviceDescriptorProto: ServiceDescriptorProto) =>
+        // handle service
+        if (serviceNameParameter.isEmpty ||
+            serviceNameParameter
+              .endsWith(serviceDescriptorProto.getName))
+          serviceHandler(fileDescriptorProto, serviceDescriptorProto)
+        // handle methods
+        else {
+          val pkg = fileDescriptorProto.getPackage
+          serviceDescriptorProto.getMethodList.asScala
+            .find(method =>
+              serviceNameParameter == formatPackage(pkg) + serviceDescriptorProto.getName + "." + method.getName ||
+                serviceNameParameter == formatPackage(pkg) + serviceDescriptorProto.getName + "/" + method.getName)
+            .map(methodHandler)
+            .getOrElse(Nil)
+      }
 
     format match {
+      // ls
+      case ServiceListFormat.SHORT if serviceNameParameter.isEmpty =>
+        serviceNamesFuture()
+
+      // ls service
       case ServiceListFormat.SHORT =>
-        // ls
-        if (serviceNameParameter.isEmpty)
-          serviceNamesFuture
-        // ls service
-        else
-          serviceDetail(serviceNameParameter)
+        val handler = handlerBuilder(
+          (_, serviceDescriptorProto) =>
+            serviceDescriptorProto.getMethodList.asScala.toList
+              .map(_.getName),
+          method => Seq(method.getName)
+        )
+        getServiceDescriptorProto(
+          serviceNameParameter,
+          handler
+        )
 
-      // ls -l
+      // ls -l [service]
       case ServiceListFormat.LONG =>
-        serviceNamesFuture.flatMap { serviceNames =>
+        val handler = handlerBuilder(
+          (fileDescriptorProto, serviceDescriptorProto) =>
+            Seq(
+              ProtobufFormat.print(fileDescriptorProto,
+                                   serviceDescriptorProto)),
+          method =>
+            Seq(
+              "  " + ProtobufFormat
+                .print(method) + System.lineSeparator)
+        )
+        serviceNamesFuture().flatMap { serviceNames =>
           val futures =
-            serviceNames.map(serviceDetail)
-
-          Future.foldLeft[Seq[String], Seq[String]](futures)(Seq[String]()) {
-            (acc: Seq[String], v: Seq[String]) =>
-              if (v.nonEmpty) acc ++ v else acc
+            serviceNames.map(
+              serviceName =>
+                getServiceDescriptorProto(
+                  serviceName,
+                  handler
+              ))
+          // Seq[Future[Seq[String]]] to Future[Seq[String]]
+          Future.foldLeft(futures)(Seq[String]()) { (acc, v) =>
+            if (v.nonEmpty) acc ++ v else acc
           }
         }
+
     }
 
   }
@@ -176,6 +181,24 @@ class GrpcClient private (
                     .print(descriptor)
             }
         ))
+  }
+
+  private def getServiceDescriptorProto[T](
+      serviceName: String,
+      handler: ((FileDescriptorProto, ServiceDescriptorProto) => Seq[T]))
+    : Future[Seq[T]] = {
+    getFileDescriptorProtoList(serviceName).map {
+      _.flatMap(fileDescriptorProto =>
+        fileDescriptorProto.getServiceList.asScala.map {
+          serviceDescriptorProto =>
+            (fileDescriptorProto, serviceDescriptorProto)
+      }).headOption
+        .map {
+          case (fileDescriptorProto, serviceDescriptorProto) =>
+            handler(fileDescriptorProto, serviceDescriptorProto)
+        }
+        .getOrElse(Nil)
+    }
   }
 
   def getFileDescriptorProtoList(
