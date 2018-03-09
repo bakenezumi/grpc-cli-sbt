@@ -14,16 +14,26 @@ object GrpcCliPlugin extends AutoPlugin {
   lazy val gRPCServiceMethodList =
     SettingKey[Seq[String]]("gRPC-service-method-list", "service method list")
 
+  val help =
+    Help.briefOnly(
+      Seq(("grpc-cli ls ...", "List services"),
+          ("grpc_cli call ...", "Call method"),
+          ("grpc_cli type ...", "Print type")))
+
   object autoImport {
 
     lazy val gRPCEndpoint =
       SettingKey[String]("gRPC-endpoint", "host:port")
 
-    val help =
-      Help.briefOnly(
-        Seq(("grpc-cli ls ...", "List services"),
-            ("grpc_cli call ...", "Call method"),
-            ("grpc_cli type ...", "Print type")))
+    lazy val gRPCUseReflection =
+      SettingKey[Boolean](
+        "gRPC-use-reflection",
+        " If true, protos will first be resolved by reflection if applicable.")
+
+    lazy val gRPCProtoSources =
+      SettingKey[Seq[File]](
+        "gRPC-proto-sources",
+        "look for protos to compile (default src/main/protobuf)")
 
     val grpcCli = Command("grpc-cli", help) { state =>
       val extracted = Project extract state
@@ -39,21 +49,25 @@ object GrpcCliPlugin extends AutoPlugin {
       val extracted = Project extract state
       import extracted._
       println(getOpt(gRPCEndpoint).get)
+      val logger = getOpt(sLog).get
       parsed match {
         case ls @ LsCommand(method, _) =>
           ls.apply(getOpt(gRPCEndpoint).get) match {
             case Nil =>
-              println(s"Service or method $method not found.")
+              logger.info(s"Service or method $method not found.")
             case result => result.foreach(println)
           }
         case tpe @ TypeCommand(typeName) =>
           tpe.apply(getOpt(gRPCEndpoint).get) match {
             case Nil =>
-              println(s"Type $typeName not found.")
+              logger.info(s"Type $typeName not found.")
             case result => result.foreach(println)
           }
         case call @ CallCommand(_) =>
-          call.apply(getOpt(gRPCEndpoint).get)
+          call.apply(getOpt(gRPCEndpoint).get,
+                     getOpt(gRPCUseReflection).get,
+                     getOpt(gRPCProtoSources).get.map(_.toPath),
+                     logger)
       }
       state
     }
@@ -61,6 +75,9 @@ object GrpcCliPlugin extends AutoPlugin {
 
   def grpcCliSettings = Seq(
     autoImport.gRPCEndpoint := "localhost:50051",
+    autoImport.gRPCUseReflection := true,
+    autoImport.gRPCProtoSources := Seq(
+      (sourceDirectory in Compile).value / "protobuf"),
     commands += autoImport.grpcCli,
     gRPCServiceList := {
       try {
@@ -68,7 +85,7 @@ object GrpcCliPlugin extends AutoPlugin {
         LsCommand().apply(autoImport.gRPCEndpoint.value)
       } catch {
         case _: _root_.io.grpc.StatusRuntimeException =>
-          println(
+          sLog.value.warn(
             s"Received an error when querying services endpoint: ${autoImport.gRPCEndpoint.value}")
           Nil
       }
@@ -82,11 +99,11 @@ object GrpcCliPlugin extends AutoPlugin {
               .map(methodName => serviceName + "." + methodName))
       } catch {
         case _: _root_.io.grpc.StatusRuntimeException =>
-          println(
+          sLog.value.warn(
             s"Received an error when querying services endpoint: ${autoImport.gRPCEndpoint.value}")
           Nil
       }
-    }
+    },
   )
 
   override def projectSettings: Seq[Def.Setting[_]] =

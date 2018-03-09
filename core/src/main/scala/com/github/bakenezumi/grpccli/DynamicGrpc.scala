@@ -13,18 +13,18 @@ import io.grpc.{CallOptions, Channel}
 
 /** Copy from [[https://github.com/grpc-ecosystem/polyglot/blob/v1.6.0/src/main/java/me/dinowernli/grpc/polyglot/grpc/DynamicGrpcClient.java]]
   * */
-object DynamicGrpcClient {
+object DynamicGrpc {
   def apply(protoMethodDescriptor: MethodDescriptor,
-            channel: Channel): DynamicGrpcClient =
-    new DynamicGrpcClient(protoMethodDescriptor, channel)
+            channel: Channel): DynamicGrpc =
+    new DynamicGrpc(protoMethodDescriptor, channel)
 
 }
 
-class DynamicGrpcClient private[grpccli] (
-    protoMethodDescriptor: MethodDescriptor,
-    channel: Channel) {
+class DynamicGrpc private[grpccli] (protoMethodDescriptor: MethodDescriptor,
+                                    channel: Channel) {
 
-  private val logger = Logger.getLogger(classOf[GrpcClient].getName)
+  private val logger =
+    Logger.getLogger(classOf[ServerReflectionGrpcClient].getName)
 
   /**
     * Makes an rpc to the remote endpoint and respects the supplied callback. Returns a future which

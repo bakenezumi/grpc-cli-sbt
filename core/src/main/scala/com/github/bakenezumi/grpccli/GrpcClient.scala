@@ -3,7 +3,7 @@ package com.github.bakenezumi.grpccli
 import java.util.concurrent.TimeUnit
 import java.util.logging.Logger
 
-import com.github.bakenezumi.grpccli.ServerReflectionGrpc.ServerReflectionStub
+import com.github.bakenezumi.grpccli.ServerReflectionGrpc.ServerReflection
 import com.github.bakenezumi.grpccli.protobuf.{
   ProtoMethodName,
   ProtobufFormat,
@@ -25,26 +25,26 @@ import io.grpc.stub.StreamObserver
 import io.grpc.{CallOptions, ManagedChannel, ManagedChannelBuilder}
 
 import scala.collection.JavaConverters._
-import scala.concurrent.duration._
-import scala.concurrent.{Await, ExecutionContext, Future, Promise}
+import scala.concurrent.{ExecutionContext, Future, Promise}
 
-object GrpcClient {
-  def apply(host: String, port: Int)(
-      implicit executorContext: ExecutionContext): GrpcClient = {
+object ServerReflectionGrpcClient {
+  def apply(host: String, port: Int)(implicit executorContext: ExecutionContext)
+    : ServerReflectionGrpcClient = {
     val channel =
       ManagedChannelBuilder.forAddress(host, port).usePlaintext(true).build
     val serverReflectionStub = ServerReflectionGrpc.stub(channel)
-    new GrpcClient(channel, serverReflectionStub)
+    new ServerReflectionGrpcClient(channel, serverReflectionStub)
   }
 
 }
 
-class GrpcClient private (
+class ServerReflectionGrpcClient private (
     private val channel: ManagedChannel,
-    private val asyncStub: ServerReflectionStub
+    private val asyncStub: ServerReflection
 )(implicit executorContext: ExecutionContext) {
 
-  private[this] val logger = Logger.getLogger(classOf[GrpcClient].getName)
+  private[this] val logger =
+    Logger.getLogger(classOf[ServerReflectionGrpcClient].getName)
 
   def shutdown(): Unit = {
     channel.shutdown.awaitTermination(5, TimeUnit.SECONDS)
@@ -80,7 +80,7 @@ class GrpcClient private (
     if (packageName.isEmpty) ""
     else packageName + "."
 
-  /** Get a list of service
+  /** Get a list of service by server reflection
     * */
   def getServiceList(serviceNameParameter: String = "",
                      format: ServiceListFormat = ServiceListFormat.SHORT)
@@ -165,7 +165,7 @@ class GrpcClient private (
 
   }
 
-  /** get a message type
+  /** Get a message type  by server reflection
     * */
   def getType(typeName: String): Future[Seq[String]] = {
     getFileDescriptorProtoList(typeName)
@@ -201,12 +201,32 @@ class GrpcClient private (
     }
   }
 
+  /** Get a list of `FileDescriptorProto` by server reflection
+    * */
   def getFileDescriptorProtoList(
       symbol: String): Future[Seq[FileDescriptorProto]] = {
     callServerReflection(
       ServerReflectionRequest.newBuilder.setFileContainingSymbol(symbol).build,
       _.getFileDescriptorResponse.getFileDescriptorProtoList.asScala
         .map(FileDescriptorProto.parseFrom)
+    )
+  }
+
+  /** Get `FileDescriptorProtoSet` by server reflection
+    * */
+  def getFileDescriptorProtoSet(symbol: String): Future[FileDescriptorSet] = {
+    callServerReflection(
+      ServerReflectionRequest.newBuilder
+        .setFileContainingSymbol(symbol)
+        .build, { serverReflectionResponse =>
+        val fileDescriptorProtoList =
+          serverReflectionResponse.getFileDescriptorResponse.getFileDescriptorProtoList.asScala
+            .map(FileDescriptorProto.parseFrom)
+        FileDescriptorSet
+          .newBuilder()
+          .addAllFile(fileDescriptorProtoList.asJava)
+          .build()
+      }
     )
   }
 
@@ -220,21 +240,15 @@ class GrpcClient private (
 
   /** call gRPC service method
     * */
-  def callDynamic(methodName: String): Future[Unit] = {
-    val fileDescriptors =
-      Await.result(getFileDescriptorProtoList(methodName), Duration(5, SECONDS))
-
-    val descriptorSet = FileDescriptorSet
-      .newBuilder()
-      .addAllFile(fileDescriptors.asJava)
-      .build()
+  def callDynamic(fileDescriptorSet: FileDescriptorSet,
+                  methodName: String): Future[Unit] = {
     val serviceResolver =
-      ServiceResolver.fromFileDescriptorSet(descriptorSet)
+      ServiceResolver.fromFileDescriptorSet(fileDescriptorSet)
     val protoMethodName =
       ProtoMethodName.parseFullGrpcMethodName(formatMethodName(methodName))
     val methodDescriptor =
       serviceResolver.resolveServiceMethod(protoMethodName)
-    val dynamicClient = DynamicGrpcClient(methodDescriptor, channel)
+    val dynamicClient = DynamicGrpc(methodDescriptor, channel)
     val registry = TypeRegistry
       .newBuilder()
       .add(serviceResolver.listMessageTypes.asJava)

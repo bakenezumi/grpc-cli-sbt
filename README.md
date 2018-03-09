@@ -16,7 +16,7 @@ The command line tool can do the following things:
 - ~~Attach metadata and~~(yet) display received metadata.
 - ~~Handle common authentication to server.~~(yet)
 - Infer request/response types from server reflection result.
-- ~~Find the request/response types from a given proto file.~~(yet)
+- Find the request/response types from a given proto file.
 - Read proto request in text form.
 - ~~Read request in wire form (for protobuf messages, this means serialized binary form).~~(yet)
 - Display proto response in text form.
@@ -155,7 +155,11 @@ We can send RPCs to a server and get responses using `grpc-cli call` command.
 
 - Use local proto files
   
-  Not Implemented (yet)
+    If the server does not have the server reflection service, you will need to
+    provide local proto files containing the service definition.
+
+    The plugin assumes your `proto` files are under `src/main/protobuf`,
+    however this is configurable using the `gRPCProtoSources` setting.
 
 License
 --------

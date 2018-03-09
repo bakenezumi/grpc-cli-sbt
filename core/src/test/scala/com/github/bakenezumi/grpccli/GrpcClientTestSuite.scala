@@ -4,11 +4,14 @@ import java.io.InputStream
 
 import org.scalatest.{AsyncFunSuite, BeforeAndAfterAll}
 
+import scala.concurrent.Await
+import scala.concurrent.duration.{Duration, SECONDS}
+
 // To run this test, please use server reflection of
 // https://github.com/grpc/grpc-java/blob/master/examples/src/main/java/io/grpc/examples/helloworld/HelloWorldServer.java
 // You need to enable it and start it up in advance.
 class GrpcClientTestSuite extends AsyncFunSuite with BeforeAndAfterAll {
-  val client = GrpcClient("localhost", 50051)
+  val client = ServerReflectionGrpcClient("localhost", 50051)
 
   override def afterAll(): Unit = {
     client.shutdown()
@@ -88,11 +91,16 @@ class GrpcClientTestSuite extends AsyncFunSuite with BeforeAndAfterAll {
   test("call") {
     System.setIn(new MockStandartInputStream("name:foo"))
     val service = "helloworld.Greeter.SayHello"
-    val future = client.callDynamic(service)
+
+    val fileDescriptorProtoSet =
+      Await.result(client.getFileDescriptorProtoSet(service),
+                   Duration(5, SECONDS))
+    val future = client.callDynamic(fileDescriptorProtoSet, service)
+
     future.onComplete { _ =>
       System.setIn(null)
     }
-    future.map(ret => assert(ret == ()))
+    future.map(_ => succeed)
   }
 
 }

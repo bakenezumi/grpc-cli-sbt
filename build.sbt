@@ -32,6 +32,7 @@ lazy val core = (project in file("core")).settings(
     "io.grpc" % "grpc-stub" % grpcJavaVersion ::
     "io.grpc" % "grpc-services" % grpcJavaVersion ::
     "io.grpc" % "grpc-netty" % grpcJavaVersion ::
+    "com.github.os72" % "protoc-jar" % "3.5.1" ::
     "org.scalatest" %% "scalatest" % "3.0.5" % Test ::
     Nil,
 )
