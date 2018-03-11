@@ -1,6 +1,10 @@
 package com.github.bakenezumi.grpccli
 
-import com.github.bakenezumi.grpccli.protobuf.PrintedTypeNameCache
+import com.github.bakenezumi.grpccli.protobuf.{
+  PrintedTypeNameCache,
+  ProtocInvoker
+}
+import com.google.protobuf.DescriptorProtos
 import sbt.Keys._
 import sbt._
 
@@ -73,35 +77,52 @@ object GrpcCliPlugin extends AutoPlugin {
     }
   }
 
+  import GrpcCliPlugin.autoImport._
   def grpcCliSettings = Seq(
-    autoImport.gRPCEndpoint := "localhost:50051",
-    autoImport.gRPCUseReflection := true,
-    autoImport.gRPCProtoSources := Seq(
-      (sourceDirectory in Compile).value / "protobuf"),
-    commands += autoImport.grpcCli,
+    gRPCEndpoint := "localhost:50051",
+    gRPCUseReflection := true,
+    gRPCProtoSources := Seq((sourceDirectory in Compile).value / "protobuf"),
+    commands += grpcCli,
     gRPCServiceList := {
-      try {
-        PrintedTypeNameCache.clear()
-        LsCommand().apply(autoImport.gRPCEndpoint.value)
-      } catch {
-        case _: _root_.io.grpc.StatusRuntimeException =>
-          sLog.value.warn(
-            s"Received an error when querying services endpoint: ${autoImport.gRPCEndpoint.value}")
-          Nil
+      if (gRPCUseReflection.value) {
+        try {
+          PrintedTypeNameCache.clear()
+          LsCommand().apply(gRPCEndpoint.value)
+        } catch {
+          case _: _root_.io.grpc.StatusRuntimeException =>
+            sLog.value.warn(
+              s"Received an error when querying services endpoint: ${gRPCEndpoint.value}")
+            Nil
+        }
+      } else { // TODO: WIP
+        Nil
       }
     },
     gRPCServiceMethodList := {
-      try {
-        gRPCServiceList.value.flatMap(
-          serviceName =>
-            LsCommand(serviceName)
-              .apply(autoImport.gRPCEndpoint.value)
-              .map(methodName => serviceName + "." + methodName))
-      } catch {
-        case _: _root_.io.grpc.StatusRuntimeException =>
-          sLog.value.warn(
-            s"Received an error when querying services endpoint: ${autoImport.gRPCEndpoint.value}")
-          Nil
+      if (gRPCUseReflection.value) {
+        try {
+          gRPCServiceList.value.flatMap(
+            serviceName =>
+              LsCommand(serviceName)
+                .apply(gRPCEndpoint.value)
+                .map(methodName => serviceName + "." + methodName))
+        } catch {
+          case _: _root_.io.grpc.StatusRuntimeException =>
+            sLog.value.warn(
+              s"Received an error when querying services endpoint: ${autoImport.gRPCEndpoint.value}")
+            Nil
+        }
+      } else { // TODO: WIP
+        import scala.collection.JavaConverters._
+        val protoPaths = gRPCProtoSources.value.map(_.toPath)
+        val invoker = new ProtocInvoker(protoPaths.head, protoPaths.tail)
+        val fileDescriptorSet: DescriptorProtos.FileDescriptorSet =
+          invoker.invoke
+        fileDescriptorSet.getFileList.asScala.toList.flatMap(file =>
+          file.getServiceList.asScala.flatMap(service =>
+            service.getMethodList.asScala.map(method =>
+              file.getPackage + "." + service.getName + "." + method.getName)))
+
       }
     },
   )

@@ -95,10 +95,11 @@ class ServerReflectionGrpcClient private (
           .map(_.getName)
     )
 
-    def handlerBuilder(serviceHandler: (
-                           (FileDescriptorProto,
-                            ServiceDescriptorProto) => Seq[String]),
-                       methodHandler: MethodDescriptorProto => Seq[String]) =
+    def separateHandler(serviceHandler: (
+                            (FileDescriptorProto,
+                             ServiceDescriptorProto) => Seq[String]),
+                        methodHandler: MethodDescriptorProto => Seq[String])
+      : (FileDescriptorProto, ServiceDescriptorProto) => Seq[String] =
       (fileDescriptorProto: FileDescriptorProto,
        serviceDescriptorProto: ServiceDescriptorProto) =>
         // handle service
@@ -124,7 +125,7 @@ class ServerReflectionGrpcClient private (
 
       // ls service
       case ServiceListFormat.SHORT =>
-        val handler = handlerBuilder(
+        val handler = separateHandler(
           (_, serviceDescriptorProto) =>
             serviceDescriptorProto.getMethodList.asScala.toList
               .map(_.getName),
@@ -137,7 +138,7 @@ class ServerReflectionGrpcClient private (
 
       // ls -l [service]
       case ServiceListFormat.LONG =>
-        val handler = handlerBuilder(
+        val handler = separateHandler(
           (fileDescriptorProto, serviceDescriptorProto) =>
             Seq(
               ProtobufFormat.print(fileDescriptorProto,

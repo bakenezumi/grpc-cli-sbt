@@ -34,12 +34,6 @@ edit `your-project/project/plugins.sbt`
 addSbtPlugin("com.github.bakenezumi" % "grpc-cli-sbt" % "0.1.0-SNAPSHOT")
 ```
 
-edit `your-project/build.sbt`
-
-```scala
-enablePlugins(com.github.bakenezumi.grpccli.GrpcCliPlugin)
-```
-
 ## Prerequisites
 
 Most `grpc-cli` commands need the server to support server reflection. See
