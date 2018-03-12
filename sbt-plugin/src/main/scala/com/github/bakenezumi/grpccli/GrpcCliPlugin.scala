@@ -82,8 +82,7 @@ object GrpcCliPlugin extends AutoPlugin {
           }
         case call @ CallCommand(_) =>
           call.apply(getOpt(gRPCEndpoint).get,
-                     getOpt(gRPCUseReflection).get,
-                     getOpt(gRPCProtoSources).get.map(_.toPath),
+                     getOpt(gRPCFileDescriptorSet).get,
                      logger)
       }
       state
@@ -103,11 +102,13 @@ object GrpcCliPlugin extends AutoPlugin {
          import scala.concurrent.ExecutionContext.Implicits.global
          val Array(host: String, port: String) =
            gRPCEndpoint.value.split(":")
+         val client = GrpcClient
+           .apply(host, port.toInt)
          Try {
-           Await.result(GrpcClient
-                          .apply(host, port.toInt)
-                          .getAllInOneFileDescriptorProtoSet,
-                        Duration(5, SECONDS))
+           try {
+             Await.result(client.getAllInOneFileDescriptorProtoSet,
+                          Duration(5, SECONDS))
+           } finally { client.shutdown() }
          } match {
            case Success(ret) => Some(ret)
            case Failure(t) =>
