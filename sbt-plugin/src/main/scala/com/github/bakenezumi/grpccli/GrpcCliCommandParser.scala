@@ -1,6 +1,7 @@
 package com.github.bakenezumi.grpccli
 
 import com.github.bakenezumi.grpccli.protobuf.PrintedTypeNameCache
+import com.google.protobuf.DescriptorProtos.FileDescriptorSet
 import sbt.internal.util.complete.DefaultParsers._
 
 trait GrpcCliCommandParser {
@@ -8,6 +9,7 @@ trait GrpcCliCommandParser {
   // Implementation required
   val serviceList: Seq[String]
   val methodList: Seq[String]
+  val fileDescriptorSet: FileDescriptorSet
 
   lazy val NotHyphen = charClass(c => c != '-' && !c.isWhitespace)
 
@@ -30,14 +32,17 @@ trait GrpcCliCommandParser {
   lazy val ls =
     (token("ls") ~> token(Space ~> "-l").? ~ OptService ~ token(Space ~> "-l").?)
       .map {
-        case ((None, None), None)          => LsCommand()
-        case ((None, Some(service)), None) => LsCommand(service)
-        case ((Some(_), None), _)          => LsCommand("", ServiceListFormat.LONG)
+        case ((None, None), None) => LsCommand(fileDescriptorSet)
+        case ((None, Some(service)), None) =>
+          LsCommand(fileDescriptorSet, service)
+        case ((Some(_), None), _) =>
+          LsCommand(fileDescriptorSet, "", ServiceListFormat.LONG)
         case ((Some(_), Some(service)), _) =>
-          LsCommand(service, ServiceListFormat.LONG)
-        case ((_, None), Some(_)) => LsCommand("", ServiceListFormat.LONG)
+          LsCommand(fileDescriptorSet, service, ServiceListFormat.LONG)
+        case ((_, None), Some(_)) =>
+          LsCommand(fileDescriptorSet, "", ServiceListFormat.LONG)
         case ((_, Some(service)), Some(_)) =>
-          LsCommand(service, ServiceListFormat.LONG)
+          LsCommand(fileDescriptorSet, service, ServiceListFormat.LONG)
       }
 
   lazy val PrintedType = {

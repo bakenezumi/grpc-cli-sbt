@@ -4,7 +4,7 @@ import java.io.{ByteArrayOutputStream, IOException, PrintStream}
 import java.nio.file._
 import java.util.logging.Logger
 
-import com.github.bakenezumi.grpccli.ServerReflectionGrpcClient
+import com.github.bakenezumi.grpccli.GrpcClient
 import com.github.os72.protocjar.Protoc
 import com.google.protobuf.DescriptorProtos
 import com.google.protobuf.DescriptorProtos.FileDescriptorSet
@@ -15,7 +15,7 @@ import scala.collection.mutable.ListBuffer
 class ProtocInvoker(discoveryRoot: Path, protocIncludePaths: Seq[Path]) {
 
   private val logger =
-    Logger.getLogger(classOf[ServerReflectionGrpcClient].getName)
+    Logger.getLogger(classOf[GrpcClient].getName)
   private val PROTO_MATCHER =
     FileSystems.getDefault.getPathMatcher("glob:**/*.proto")
 
@@ -24,7 +24,7 @@ class ProtocInvoker(discoveryRoot: Path, protocIncludePaths: Seq[Path]) {
     * `FileDescriptorSet` which describes all the protos.
     */
   @throws[ProtocInvocationException]
-  def invoke: DescriptorProtos.FileDescriptorSet = {
+  def invoke: FileDescriptorSet = {
     val wellKnownTypesInclude = try setupWellKnownTypes
     catch {
       case e: IOException =>

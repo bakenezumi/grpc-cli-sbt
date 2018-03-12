@@ -11,44 +11,11 @@ import scala.concurrent.duration.{Duration, SECONDS}
 // https://github.com/grpc/grpc-java/blob/master/examples/src/main/java/io/grpc/examples/helloworld/HelloWorldServer.java
 // You need to enable it and start it up in advance.
 class GrpcClientTestSuite extends AsyncFunSuite with BeforeAndAfterAll {
-  val client = ServerReflectionGrpcClient("localhost", 50051)
+  val client = GrpcClient("localhost", 50051)
 
   override def afterAll(): Unit = {
     client.shutdown()
     System.setIn(null)
-  }
-
-  test("ls") {
-    val service = "helloworld.Greeter.SayHello"
-    val future = client.getServiceList(service)
-    future.map(ret => assert(ret == Seq("SayHello")))
-  }
-
-  test("ls not found") {
-    val service = "not.found"
-    val future = client.getServiceList(service)
-    future.map(ret => assert(ret == Nil))
-  }
-
-  test("ls -l") {
-    val service = "grpc.reflection.v1alpha.ServerReflection"
-    val future = client.getServiceList(service, format = ServiceListFormat.LONG)
-    future.map(ret =>
-      assert(ret == Seq("""|filename: io/grpc/reflection/v1alpha/reflection.proto
-                           |package: grpc.reflection.v1alpha;
-                           |service ServerReflection {
-                           |  rpc ServerReflectionInfo(stream grpc.reflection.v1alpha.ServerReflectionRequest) returns (stream grpc.reflection.v1alpha.ServerReflectionResponse) {}
-                           |}
-                           |""".stripMargin)))
-  }
-
-  test("ls -l method") {
-    val service =
-      "grpc.reflection.v1alpha.ServerReflection.ServerReflectionInfo"
-    val future = client.getServiceList(service, format = ServiceListFormat.LONG)
-    future.map(ret =>
-      assert(ret == Seq("""|  rpc ServerReflectionInfo(stream grpc.reflection.v1alpha.ServerReflectionRequest) returns (stream grpc.reflection.v1alpha.ServerReflectionResponse) {}
-                           |""".stripMargin)))
   }
 
   test("type") {
@@ -101,6 +68,13 @@ class GrpcClientTestSuite extends AsyncFunSuite with BeforeAndAfterAll {
       System.setIn(null)
     }
     future.map(_ => succeed)
+  }
+
+  test("getAllInOneFileDescriptorProtoSet") {
+
+    val future = client.getAllInOneFileDescriptorProtoSet
+
+    future.map(ret => assert(ret != null))
   }
 
 }

@@ -4,6 +4,7 @@ import java.nio.file.Path
 
 import com.github.bakenezumi.grpccli.protobuf.ProtocInvoker
 import com.google.common.base.Throwables
+import com.google.protobuf.DescriptorProtos.FileDescriptorSet
 import io.grpc.{Status, StatusRuntimeException}
 import sbt.util.Logger
 
@@ -11,25 +12,23 @@ import scala.concurrent.Await
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
 import scala.util.{Failure, Success, Try}
-
 sealed trait GrpcCliCommand {
 
-  def using[T](address: String)(f: ServerReflectionGrpcClient => T): T = {
+  def using[T](address: String)(f: GrpcClient => T): T = {
     val Array(host: String, port: String) = address.split(":")
-    val client = ServerReflectionGrpcClient(host, port.toInt)
+    val client = GrpcClient(host, port.toInt)
     try { f(client) } finally {
       client.shutdown()
     }
   }
 }
 
-case class LsCommand(method: String = "",
+case class LsCommand(fileDescriptorSet: FileDescriptorSet,
+                     method: String = "",
                      format: ServiceListFormat = ServiceListFormat.SHORT)
     extends GrpcCliCommand {
-  def apply(address: String): Seq[String] = using(address) { client =>
-    val future = client.getServiceList(method, format)
-    Await.result(future, Duration(5, SECONDS))
-  }
+  def apply: Seq[String] =
+    ServiceList.listServices(fileDescriptorSet, method, format)
 }
 
 case class TypeCommand(typeName: String) extends GrpcCliCommand {
@@ -73,7 +72,6 @@ case class CallCommand(method: String) extends GrpcCliCommand {
           val invoker = new ProtocInvoker(protoSources.head, protoSources.tail)
           invoker.invoke
         }
-
       if (fileDescriptorSet.getFileCount < 1)
         logger.warn(s"Service or method $method not found.")
       else {

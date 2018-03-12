@@ -24,7 +24,7 @@ class DynamicGrpc private[grpccli] (protoMethodDescriptor: MethodDescriptor,
                                     channel: Channel) {
 
   private val logger =
-    Logger.getLogger(classOf[ServerReflectionGrpcClient].getName)
+    Logger.getLogger(classOf[GrpcClient].getName)
 
   /**
     * Makes an rpc to the remote endpoint and respects the supplied callback. Returns a future which

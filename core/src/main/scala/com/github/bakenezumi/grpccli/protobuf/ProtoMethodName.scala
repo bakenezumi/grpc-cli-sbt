@@ -8,6 +8,7 @@ class ProtoMethodName private (val packageName: String,
 
   def getFullServiceName: String = Joiner.on(".").join(packageName, serviceName)
 }
+
 object ProtoMethodName {
 
   def parseFullGrpcMethodName(fullMethodName: String): ProtoMethodName = {
@@ -37,4 +38,5 @@ object ProtoMethodName {
     val serviceName = fullServiceName.substring(index + 1)
     new ProtoMethodName(packageName, serviceName, methodName)
   }
+
 }

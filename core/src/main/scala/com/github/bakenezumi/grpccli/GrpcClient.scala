@@ -12,14 +12,13 @@ import com.github.bakenezumi.grpccli.protobuf.{
 import com.google.protobuf.DescriptorProtos.{
   FileDescriptorProto,
   FileDescriptorSet,
-  MethodDescriptorProto,
-  ServiceDescriptorProto
 }
 import com.google.protobuf.DynamicMessage
 import com.google.protobuf.util.JsonFormat.TypeRegistry
 import io.grpc.reflection.v1alpha.{
   ServerReflectionRequest,
-  ServerReflectionResponse
+  ServerReflectionResponse,
+  ServiceResponse
 }
 import io.grpc.stub.StreamObserver
 import io.grpc.{CallOptions, ManagedChannel, ManagedChannelBuilder}
@@ -27,24 +26,24 @@ import io.grpc.{CallOptions, ManagedChannel, ManagedChannelBuilder}
 import scala.collection.JavaConverters._
 import scala.concurrent.{ExecutionContext, Future, Promise}
 
-object ServerReflectionGrpcClient {
-  def apply(host: String, port: Int)(implicit executorContext: ExecutionContext)
-    : ServerReflectionGrpcClient = {
+object GrpcClient {
+  def apply(host: String, port: Int)(
+      implicit executorContext: ExecutionContext): GrpcClient = {
     val channel =
       ManagedChannelBuilder.forAddress(host, port).usePlaintext(true).build
     val serverReflectionStub = ServerReflectionGrpc.stub(channel)
-    new ServerReflectionGrpcClient(channel, serverReflectionStub)
+    new GrpcClient(channel, serverReflectionStub)
   }
 
 }
 
-class ServerReflectionGrpcClient private (
+class GrpcClient private (
     private val channel: ManagedChannel,
     private val asyncStub: ServerReflection
 )(implicit executorContext: ExecutionContext) {
 
   private[this] val logger =
-    Logger.getLogger(classOf[ServerReflectionGrpcClient].getName)
+    Logger.getLogger(classOf[GrpcClient].getName)
 
   def shutdown(): Unit = {
     channel.shutdown.awaitTermination(5, TimeUnit.SECONDS)
@@ -80,91 +79,38 @@ class ServerReflectionGrpcClient private (
     if (packageName.isEmpty) ""
     else packageName + "."
 
-  /** Get a list of service by server reflection
+  /** Get a list of `ServiceResponse` by server reflection
     * */
-  def getServiceList(serviceNameParameter: String = "",
-                     format: ServiceListFormat = ServiceListFormat.SHORT)
-    : Future[Seq[String]] = {
+  def getServiceResponses(
+      serviceName: String = ""): Future[List[ServiceResponse]] =
+    callServerReflection(
+      ServerReflectionRequest.newBuilder.setListServices(serviceName).build,
+      _.getListServicesResponse.getServiceList.asScala.toList)
 
-    val serviceNamesFuture = () =>
-      callServerReflection(
-        ServerReflectionRequest.newBuilder
-          .setListServices(serviceNameParameter)
-          .build,
-        _.getListServicesResponse.getServiceList.asScala.toList
-          .map(_.getName)
-    )
+  /** Get a list of service name by server reflection
+    * */
+  def getServiceNames(serviceName: String = ""): Future[List[String]] =
+    getServiceResponses().map(_.map(_.getName))
 
-    def separateHandler(serviceHandler: (
-                            (FileDescriptorProto,
-                             ServiceDescriptorProto) => Seq[String]),
-                        methodHandler: MethodDescriptorProto => Seq[String])
-      : (FileDescriptorProto, ServiceDescriptorProto) => Seq[String] =
-      (fileDescriptorProto: FileDescriptorProto,
-       serviceDescriptorProto: ServiceDescriptorProto) =>
-        // handle service
-        if (serviceNameParameter.isEmpty ||
-            serviceNameParameter
-              .endsWith(serviceDescriptorProto.getName))
-          serviceHandler(fileDescriptorProto, serviceDescriptorProto)
-        // handle methods
-        else {
-          val pkg = fileDescriptorProto.getPackage
-          serviceDescriptorProto.getMethodList.asScala
-            .find(method =>
-              serviceNameParameter == formatPackage(pkg) + serviceDescriptorProto.getName + "." + method.getName ||
-                serviceNameParameter == formatPackage(pkg) + serviceDescriptorProto.getName + "/" + method.getName)
-            .map(methodHandler)
-            .getOrElse(Nil)
-      }
-
-    format match {
-      // ls
-      case ServiceListFormat.SHORT if serviceNameParameter.isEmpty =>
-        serviceNamesFuture()
-
-      // ls service
-      case ServiceListFormat.SHORT =>
-        val handler = separateHandler(
-          (_, serviceDescriptorProto) =>
-            serviceDescriptorProto.getMethodList.asScala.toList
-              .map(_.getName),
-          method => Seq(method.getName)
-        )
-        getServiceDescriptorProto(
-          serviceNameParameter,
-          handler
-        )
-
-      // ls -l [service]
-      case ServiceListFormat.LONG =>
-        val handler = separateHandler(
-          (fileDescriptorProto, serviceDescriptorProto) =>
-            Seq(
-              ProtobufFormat.print(fileDescriptorProto,
-                                   serviceDescriptorProto)),
-          method =>
-            Seq(
-              "  " + ProtobufFormat
-                .print(method) + System.lineSeparator)
-        )
-        serviceNamesFuture().flatMap { serviceNames =>
-          val futures =
-            serviceNames.map(
-              serviceName =>
-                getServiceDescriptorProto(
-                  serviceName,
-                  handler
-              ))
-          // Seq[Future[Seq[String]]] to Future[Seq[String]]
-          Future.foldLeft(futures)(Seq[String]()) { (acc, v) =>
-            if (v.nonEmpty) acc ++ v else acc
+  /** Get all in one `FileDescriptorProtoSet` by server reflection
+    * */
+  def getAllInOneFileDescriptorProtoSet: Future[FileDescriptorSet] =
+    getServiceNames()
+      .flatMap { serviceNames =>
+        val futures =
+          serviceNames.map { serviceName =>
+            getFileDescriptorProtoList(serviceName)
           }
+        Future.foldLeft(futures)(Set[FileDescriptorProto]()) { (acc, v) =>
+          acc ++ v
         }
-
-    }
-
-  }
+      }
+      .map(
+        fileDescriptorProtoList =>
+          FileDescriptorSet
+            .newBuilder()
+            .addAllFile(fileDescriptorProtoList.asJava)
+            .build())
 
   /** Get a message type  by server reflection
     * */
@@ -182,24 +128,6 @@ class ServerReflectionGrpcClient private (
                     .print(descriptor)
             }
         ))
-  }
-
-  private def getServiceDescriptorProto[T](
-      serviceName: String,
-      handler: ((FileDescriptorProto, ServiceDescriptorProto) => Seq[T]))
-    : Future[Seq[T]] = {
-    getFileDescriptorProtoList(serviceName).map {
-      _.flatMap(fileDescriptorProto =>
-        fileDescriptorProto.getServiceList.asScala.map {
-          serviceDescriptorProto =>
-            (fileDescriptorProto, serviceDescriptorProto)
-      }).headOption
-        .map {
-          case (fileDescriptorProto, serviceDescriptorProto) =>
-            handler(fileDescriptorProto, serviceDescriptorProto)
-        }
-        .getOrElse(Nil)
-    }
   }
 
   /** Get a list of `FileDescriptorProto` by server reflection

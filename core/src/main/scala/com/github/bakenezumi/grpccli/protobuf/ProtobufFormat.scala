@@ -1,6 +1,7 @@
 package com.github.bakenezumi.grpccli.protobuf
 
 import com.google.protobuf.DescriptorProtos._
+import com.google.protobuf.Descriptors.MethodDescriptor
 
 import scala.collection.JavaConverters._
 

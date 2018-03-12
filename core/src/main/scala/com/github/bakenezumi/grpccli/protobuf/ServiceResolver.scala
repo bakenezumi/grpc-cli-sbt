@@ -52,9 +52,9 @@ object ServiceResolver {
       descriptorProtoIndex: Map[String, FileDescriptorProto],
       descriptorCache: Map[String, FileDescriptor])
     : FileDescriptor = { // First, check the cache.
-    val descritorName = descriptorProto.getName
-    if (descriptorCache.contains(descritorName))
-      return descriptorCache(descritorName)
+    val descriptorName = descriptorProto.getName
+    if (descriptorCache.contains(descriptorName))
+      return descriptorCache(descriptorName)
     // Then, fetch all the required dependencies recursively.
     val dependencies = descriptorProto.getDependencyList.asScala.map(
       dependencyName =>
