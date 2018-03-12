@@ -49,7 +49,7 @@ class GrpcCliCommandParserTestSuite extends FunSuite {
   test(" type") {
     assert(
       Parser.parse(" type foo.Bar", parser.GrpcCliCommand) == Right(
-        TypeCommand("foo.Bar")))
+        TypeCommand(null, "foo.Bar")))
   }
 
 }

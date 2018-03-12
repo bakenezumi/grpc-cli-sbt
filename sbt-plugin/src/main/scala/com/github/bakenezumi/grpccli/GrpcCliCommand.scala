@@ -28,14 +28,13 @@ case class LsCommand(fileDescriptorSet: FileDescriptorSet,
                      format: ServiceListFormat = ServiceListFormat.SHORT)
     extends GrpcCliCommand {
   def apply: Seq[String] =
-    ServiceList.listServices(fileDescriptorSet, method, format)
+    LsService(fileDescriptorSet, method, format)
 }
 
-case class TypeCommand(typeName: String) extends GrpcCliCommand {
-  def apply(address: String): Seq[String] = using(address) { client =>
-    val future = client.getType(typeName)
-    Await.result(future, Duration(5, SECONDS))
-  }
+case class TypeCommand(fileDescriptorSet: FileDescriptorSet, typeName: String)
+    extends GrpcCliCommand {
+  def apply: Seq[String] =
+    TypeService.apply(fileDescriptorSet, typeName)
 }
 
 case class CallCommand(method: String) extends GrpcCliCommand {

@@ -6,9 +6,9 @@ import com.google.protobuf.Descriptors.{MethodDescriptor, ServiceDescriptor}
 
 import scala.collection.JavaConverters._
 
-object ServiceList {
+object LsService {
 
-  def listServices(
+  def apply(
       fileDescriptorSet: FileDescriptorSet,
       serviceNameParameter: String = "",
       format: ServiceListFormat = ServiceListFormat.SHORT): Seq[String] = {

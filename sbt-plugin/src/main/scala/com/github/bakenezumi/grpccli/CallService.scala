@@ -1,3 +1,3 @@
 package com.github.bakenezumi.grpccli
 
-object ServiceCall {}
+object CallService {}

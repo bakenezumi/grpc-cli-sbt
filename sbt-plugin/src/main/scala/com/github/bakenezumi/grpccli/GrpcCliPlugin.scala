@@ -74,8 +74,8 @@ object GrpcCliPlugin extends AutoPlugin {
               logger.info(s"Service or method $method not found.")
             case result => result.foreach(println)
           }
-        case tpe @ TypeCommand(typeName) =>
-          tpe.apply(getOpt(gRPCEndpoint).get) match {
+        case tpe @ TypeCommand(_, typeName) =>
+          tpe.apply match {
             case Nil =>
               logger.info(s"Type $typeName not found.")
             case result => result.foreach(println)

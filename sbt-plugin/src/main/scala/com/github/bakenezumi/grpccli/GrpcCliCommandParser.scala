@@ -51,7 +51,7 @@ trait GrpcCliCommandParser {
 
   lazy val tpe =
     (token("type") ~> Space ~> PrintedType)
-      .map(tpe_ => TypeCommand(tpe_))
+      .map(tpe_ => TypeCommand(fileDescriptorSet, tpe_))
 
   lazy val call =
     (token("call") ~> Space ~> (NotFlag | KnownMethod))

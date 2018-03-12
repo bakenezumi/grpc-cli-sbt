@@ -4,14 +4,10 @@ import java.util.concurrent.TimeUnit
 import java.util.logging.Logger
 
 import com.github.bakenezumi.grpccli.ServerReflectionGrpc.ServerReflection
-import com.github.bakenezumi.grpccli.protobuf.{
-  ProtoMethodName,
-  ProtobufFormat,
-  ServiceResolver
-}
+import com.github.bakenezumi.grpccli.protobuf.{ProtoMethodName, ServiceResolver}
 import com.google.protobuf.DescriptorProtos.{
   FileDescriptorProto,
-  FileDescriptorSet,
+  FileDescriptorSet
 }
 import com.google.protobuf.DynamicMessage
 import com.google.protobuf.util.JsonFormat.TypeRegistry
@@ -75,10 +71,6 @@ class GrpcClient private (
     p.future
   }
 
-  private def formatPackage(packageName: String): String =
-    if (packageName.isEmpty) ""
-    else packageName + "."
-
   /** Get a list of `ServiceResponse` by server reflection
     * */
   def getServiceResponses(
@@ -111,24 +103,6 @@ class GrpcClient private (
             .newBuilder()
             .addAllFile(fileDescriptorProtoList.asJava)
             .build())
-
-  /** Get a message type  by server reflection
-    * */
-  def getType(typeName: String): Future[Seq[String]] = {
-    getFileDescriptorProtoList(typeName)
-      .map(
-        _.flatMap(
-          (file: FileDescriptorProto) =>
-            file.getMessageTypeList.asScala
-              .map(descriptor => (file.getName, file.getPackage, descriptor))
-              .collect {
-                case (_, pkg, descriptor)
-                    if typeName == formatPackage(pkg) + descriptor.getName =>
-                  ProtobufFormat
-                    .print(descriptor)
-            }
-        ))
-  }
 
   /** Get a list of `FileDescriptorProto` by server reflection
     * */
