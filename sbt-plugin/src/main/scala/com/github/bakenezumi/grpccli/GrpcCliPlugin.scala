@@ -1,40 +1,36 @@
 package com.github.bakenezumi.grpccli
 
-import com.github.bakenezumi.grpccli.protobuf.{
-  PrintedTypeNameCache,
-  ProtocInvoker
-}
-import com.google.common.base.Throwables
+import com.github.bakenezumi.grpccli.protobuf.PrintedTypeNameCache
+import com.github.bakenezumi.grpccli.service.InitService
 import com.google.protobuf.DescriptorProtos.FileDescriptorSet
 import sbt.Keys._
 import sbt._
-import _root_.io.grpc.{Status, StatusRuntimeException}
-import scala.concurrent.Await
-import scala.concurrent.duration.{Duration, SECONDS}
-import scala.util.{Failure, Success, Try}
 
 object GrpcCliPlugin extends AutoPlugin {
 
   override def trigger = PluginTrigger.AllRequirements
-
-  lazy val gRPCFileDescriptorSet =
-    SettingKey[FileDescriptorSet](
-      "gRPC-local-File-descriptor-set",
-      "FileDescriptorSet retrieved remotely by server reflection")
-
-  lazy val gRPCServiceList =
-    SettingKey[Seq[String]]("gRPC-service-list-local",
-                            "a list of service methods")
-
-  lazy val gRPCServiceMethodList =
-    SettingKey[Seq[String]]("gRPC-service-method-list-local",
-                            "a list of service methods")
 
   val help =
     Help.briefOnly(
       Seq(("grpc-cli ls ...", "List services"),
           ("grpc_cli call ...", "Call method"),
           ("grpc_cli type ...", "Print type")))
+
+  object internalKeys {
+    lazy val gRPCFileDescriptorSet =
+      SettingKey[FileDescriptorSet](
+        "gRPC-File-descriptor-set",
+        "The protocol compiler can output a FileDescriptorSet containing the .proto files it parses.")
+
+    lazy val gRPCServiceList =
+      SettingKey[Seq[String]]("gRPC-service-list", "a list of gRPC services")
+
+    lazy val gRPCServiceMethodList =
+      SettingKey[Seq[String]]("gRPC-service-method-list",
+                              "a list of gRPC service methods")
+  }
+
+  import internalKeys._
 
   object autoImport {
 
@@ -98,34 +94,10 @@ object GrpcCliPlugin extends AutoPlugin {
     commands += grpcCli,
     gRPCFileDescriptorSet := {
       PrintedTypeNameCache.clear()
-      (if (gRPCUseReflection.value) {
-         import scala.concurrent.ExecutionContext.Implicits.global
-         Try(GrpcClient.using(gRPCEndpoint.value) { client =>
-           Await.result(client.getAllInOneFileDescriptorProtoSet,
-                        Duration(5, SECONDS))
-         }) match {
-           case Success(ret) => Some(ret)
-           case Failure(t) =>
-             Throwables.getRootCause(t) match {
-               case root: StatusRuntimeException
-                   if root.getStatus.getCode == Status.Code.UNIMPLEMENTED =>
-                 sLog.value.warn(
-                   "Could not list services because the remote host does not support " +
-                     "reflection. To disable resolving services by reflection, either pass the flag " +
-                     "--use_reflection=false or disable reflection in your config file.")
-                 None
-               case e =>
-                 sLog.value.err(e.getMessage)
-                 None
-             }
-         }
-       } else None).getOrElse {
-        val protoPaths = gRPCProtoSources.value.map(_.toPath)
-        val invoker =
-          new ProtocInvoker(protoPaths.head, protoPaths.tail)
-        invoker.invoke
-      }
-
+      InitService.getFileDescriptorSet(gRPCUseReflection.value,
+                                       gRPCEndpoint.value,
+                                       gRPCProtoSources.value,
+                                       sLog.value)
     },
     gRPCServiceList := {
       import scala.collection.JavaConverters._
