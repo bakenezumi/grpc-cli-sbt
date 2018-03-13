@@ -13,7 +13,7 @@ import scala.concurrent.Await
 import scala.concurrent.duration.{Duration, SECONDS}
 import scala.util.{Failure, Success, Try}
 
-object InitService {
+object InitializeService {
   def getFileDescriptorSet(useReflection: Boolean,
                            endpoint: String,
                            protoSources: Seq[File],

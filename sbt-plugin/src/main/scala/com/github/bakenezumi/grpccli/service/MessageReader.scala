@@ -1,29 +1,52 @@
-package com.github.bakenezumi.grpccli
+package com.github.bakenezumi.grpccli.service
 
 import java.io.{BufferedReader, IOException, InputStreamReader}
 import java.nio.file.{Files, Path}
 
+import com.github.bakenezumi.grpccli.service
 import com.google.common.base.Strings
 import com.google.protobuf.Descriptors.Descriptor
 import com.google.protobuf.DynamicMessage
 import com.google.protobuf.util.JsonFormat
 import com.google.protobuf.util.JsonFormat.TypeRegistry
+import sbt.internal.util.FullReader
 
 import scala.collection.mutable.ArrayBuffer
 
 object MessageReader {
 
-  /** Creates a [[com.github.bakenezumi.grpccli.MessageReader MessageReader]] which reads messages from stdin. */
+  /** Creates a [[service.MessageReader MessageReader]] which reads messages from stdin. */
+  def forStdinParser(descriptor: Descriptor,
+                     registry: JsonFormat.TypeRegistry): MessageReader = {
+    new MessageReader(
+      JsonFormat.parser.usingTypeRegistry(registry),
+      descriptor,
+      () => {
+        // TODO: support nested message type
+        val parser = new TypeFieldParser(descriptor)
+        val reader = new FullReader(None, parser.field)
+        reader.readLine("") match {
+          case Some(v) => v
+          case None =>
+            throw new IllegalArgumentException(
+              "Unable to read messages from STDIN")
+        }
+      },
+      "STDIN"
+    )
+  }
+
+  /** Creates a [[service.MessageReader MessageReader]] which reads messages from stdin. */
   def forStdin(descriptor: Descriptor,
                registry: JsonFormat.TypeRegistry): MessageReader = {
     val reader = new BufferedReader(new InputStreamReader(System.in))
     new MessageReader(JsonFormat.parser.usingTypeRegistry(registry),
                       descriptor,
-                      reader,
+                      () => reader.readLine(),
                       "STDIN")
   }
 
-  /** Creates a [[com.github.bakenezumi.grpccli.MessageReader MessageReader]] which reads the messages from a file. */
+  /** Creates a [[service.MessageReader MessageReader]] which reads the messages from a file. */
   def forFile(path: Path, descriptor: Descriptor): MessageReader =
     forFile(path, descriptor, TypeRegistry.getEmptyTypeRegistry)
 
@@ -32,7 +55,7 @@ object MessageReader {
               registry: JsonFormat.TypeRegistry): MessageReader =
     try new MessageReader(JsonFormat.parser.usingTypeRegistry(registry),
                           descriptor,
-                          Files.newBufferedReader(path),
+                          () => Files.newBufferedReader(path).readLine(),
                           path.toString)
     catch {
       case e: IOException =>
@@ -45,7 +68,7 @@ object MessageReader {
 
 class MessageReader private (jsonParser: JsonFormat.Parser,
                              descriptor: Descriptor,
-                             bufferedReader: BufferedReader,
+                             reader: () => String,
                              source: String) {
 
   /** Parses all the messages and returns them in a list. */
@@ -56,7 +79,7 @@ class MessageReader private (jsonParser: JsonFormat.Parser,
       var wasLastLineEmpty = false
       println("reading request message from stdin...")
       while (true) {
-        line = bufferedReader.readLine
+        line = reader()
         // Two consecutive empty lines mark the end of the stream.
         if (Strings.isNullOrEmpty(line)) {
           if (wasLastLineEmpty) return resultBuilder.result().toList
@@ -67,7 +90,7 @@ class MessageReader private (jsonParser: JsonFormat.Parser,
           val stringBuilder = ArrayBuffer.newBuilder[String]
           while (!Strings.isNullOrEmpty(line)) {
             stringBuilder += removeLastComma(line)
-            line = bufferedReader.readLine
+            line = reader()
           }
           wasLastLineEmpty = true
           val nextMessage = DynamicMessage.newBuilder(descriptor)
@@ -94,7 +117,7 @@ class MessageReader private (jsonParser: JsonFormat.Parser,
   }
 
   private def addBrackets(message: String): String = {
-    if (message.head != '{' && message.last != '}') s"{$message}"
+    if (message.head != '{' || message.last != '}') s"{$message}"
     else message
   }
 

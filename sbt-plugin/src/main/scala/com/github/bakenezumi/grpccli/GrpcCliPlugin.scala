@@ -1,7 +1,7 @@
 package com.github.bakenezumi.grpccli
 
 import com.github.bakenezumi.grpccli.protobuf.PrintedTypeNameCache
-import com.github.bakenezumi.grpccli.service.InitService
+import com.github.bakenezumi.grpccli.service.InitializeService
 import com.google.protobuf.DescriptorProtos.FileDescriptorSet
 import sbt.Keys._
 import sbt._
@@ -94,10 +94,10 @@ object GrpcCliPlugin extends AutoPlugin {
     commands += grpcCli,
     gRPCFileDescriptorSet := {
       PrintedTypeNameCache.clear()
-      InitService.getFileDescriptorSet(gRPCUseReflection.value,
-                                       gRPCEndpoint.value,
-                                       gRPCProtoSources.value,
-                                       sLog.value)
+      InitializeService.getFileDescriptorSet(gRPCUseReflection.value,
+                                             gRPCEndpoint.value,
+                                             gRPCProtoSources.value,
+                                             sLog.value)
     },
     gRPCServiceList := {
       import scala.collection.JavaConverters._

@@ -10,9 +10,9 @@ import scala.concurrent.ExecutionContext
 
 object LsService {
 
-  def apply(fileDescriptorSet: FileDescriptorSet,
-            serviceNameParameter: String = "",
-            format: ServiceListFormat = ServiceListFormat.SHORT)(
+  def getList(fileDescriptorSet: FileDescriptorSet,
+              serviceNameParameter: String = "",
+              format: ServiceListFormat = ServiceListFormat.SHORT)(
       implicit executorContext: ExecutionContext): Seq[String] = {
     val serviceResolver =
       ServiceResolver.fromFileDescriptorSet(fileDescriptorSet)

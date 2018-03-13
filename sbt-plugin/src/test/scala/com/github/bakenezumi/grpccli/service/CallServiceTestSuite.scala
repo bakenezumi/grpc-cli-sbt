@@ -2,8 +2,10 @@ package com.github.bakenezumi.grpccli.service
 
 import java.io.InputStream
 
-import com.github.bakenezumi.grpccli.GrpcClient
+import com.github.bakenezumi.grpccli.{GrpcCliCommandParser, GrpcClient}
+import com.google.protobuf.DescriptorProtos
 import org.scalatest.{BeforeAndAfterAll, FunSuite}
+import sbt.internal.util.FullReader
 import sbt.util.{Level, Logger}
 
 import scala.concurrent.Await
@@ -27,7 +29,13 @@ class CallServiceTestSuite extends FunSuite with BeforeAndAfterAll {
   test("call") {
     System.setIn(new MockStandardInputStream("name:foo"))
     val service = "helloworld.Greeter.SayHello"
-    CallService(service, "localhost:50051", fileDescriptorSet, MockLogger)
+    CallService.call(service, "localhost:50051", fileDescriptorSet, MockLogger)
+  }
+
+  object parser extends GrpcCliCommandParser {
+    override val serviceList: Seq[String] = Nil
+    override val methodList: Seq[String] = Nil
+    override val fileDescriptorSet: DescriptorProtos.FileDescriptorSet = null
   }
 
 }

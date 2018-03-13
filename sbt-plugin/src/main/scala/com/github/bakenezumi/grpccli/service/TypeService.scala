@@ -6,8 +6,8 @@ import com.google.protobuf.DescriptorProtos.FileDescriptorSet
 import scala.collection.JavaConverters._
 
 object TypeService {
-  def apply(fileDescriptorSet: FileDescriptorSet,
-            typeName: String): Seq[String] = {
+  def getType(fileDescriptorSet: FileDescriptorSet,
+              typeName: String): Seq[String] = {
     fileDescriptorSet.getFileList.asScala.flatMap(
       file =>
         file.getMessageTypeList.asScala

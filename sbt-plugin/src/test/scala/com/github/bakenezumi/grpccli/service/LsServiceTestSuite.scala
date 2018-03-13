@@ -23,21 +23,22 @@ class LsServiceTestSuite extends FunSuite with BeforeAndAfterAll {
 
   test("ls") {
     val service = "helloworld.Greeter.SayHello"
-    assert(LsService(fileDescriptorSet, service) == Seq("SayHello"))
+    assert(LsService.getList(fileDescriptorSet, service) == Seq("SayHello"))
   }
 
   test("ls not found") {
     val service = "not.found"
-    assert(LsService(fileDescriptorSet, service) == Nil)
+    assert(LsService.getList(fileDescriptorSet, service) == Nil)
 
   }
 
   test("ls -l") {
     val service = "grpc.reflection.v1alpha.ServerReflection"
-    assert(LsService(fileDescriptorSet,
-                     service,
-                     format = ServiceListFormat.LONG) == Seq(
-      """|filename: io/grpc/reflection/v1alpha/reflection.proto
+    assert(
+      LsService.getList(fileDescriptorSet,
+                        service,
+                        format = ServiceListFormat.LONG) == Seq(
+        """|filename: io/grpc/reflection/v1alpha/reflection.proto
                            |package: grpc.reflection.v1alpha;
                            |service ServerReflection {
                            |  rpc ServerReflectionInfo(stream grpc.reflection.v1alpha.ServerReflectionRequest) returns (stream grpc.reflection.v1alpha.ServerReflectionResponse) {}
@@ -48,10 +49,11 @@ class LsServiceTestSuite extends FunSuite with BeforeAndAfterAll {
   test("ls -l method") {
     val service =
       "grpc.reflection.v1alpha.ServerReflection.ServerReflectionInfo"
-    assert(LsService(fileDescriptorSet,
-                     service,
-                     format = ServiceListFormat.LONG) == Seq(
-      """|  rpc ServerReflectionInfo(stream grpc.reflection.v1alpha.ServerReflectionRequest) returns (stream grpc.reflection.v1alpha.ServerReflectionResponse) {}
+    assert(
+      LsService.getList(fileDescriptorSet,
+                        service,
+                        format = ServiceListFormat.LONG) == Seq(
+        """|  rpc ServerReflectionInfo(stream grpc.reflection.v1alpha.ServerReflectionRequest) returns (stream grpc.reflection.v1alpha.ServerReflectionResponse) {}
                            |""".stripMargin))
   }
 

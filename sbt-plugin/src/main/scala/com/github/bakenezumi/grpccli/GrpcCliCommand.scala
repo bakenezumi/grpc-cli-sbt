@@ -16,18 +16,18 @@ case class LsCommand(fileDescriptorSet: FileDescriptorSet,
                      format: ServiceListFormat = ServiceListFormat.SHORT)
     extends GrpcCliCommand {
   def apply: Seq[String] =
-    LsService(fileDescriptorSet, method, format)
+    LsService.getList(fileDescriptorSet, method, format)
 }
 
 case class TypeCommand(fileDescriptorSet: FileDescriptorSet, typeName: String)
     extends GrpcCliCommand {
   def apply: Seq[String] =
-    TypeService(fileDescriptorSet, typeName)
+    TypeService.getType(fileDescriptorSet, typeName)
 }
 
 case class CallCommand(method: String) extends GrpcCliCommand {
   def apply(address: String,
             fileDescriptorSet: FileDescriptorSet,
             logger: Logger): Unit =
-    CallService.apply(method, address, fileDescriptorSet, logger)
+    CallService.call(method, address, fileDescriptorSet, logger)
 }

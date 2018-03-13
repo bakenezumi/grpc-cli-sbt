@@ -20,7 +20,7 @@ class TypeServiceTestSuite extends FunSuite {
   test("type") {
     val tpe = "helloworld.HelloRequest"
     assert(
-      TypeService(fileDescriptorSet, tpe).map(_.replace("\r", "")) ==
+      TypeService.getType(fileDescriptorSet, tpe).map(_.replace("\r", "")) ==
         Seq("""|message HelloRequest {
                |  string name = 1[json_name = "name"];
                |}
@@ -31,7 +31,7 @@ class TypeServiceTestSuite extends FunSuite {
     val tpe = "grpc.reflection.v1alpha.ServerReflectionResponse"
 
     assert(
-      TypeService(fileDescriptorSet, tpe).map(_.replace("\r", "")) ==
+      TypeService.getType(fileDescriptorSet, tpe).map(_.replace("\r", "")) ==
         Seq("""|message ServerReflectionResponse {
                  |  string valid_host = 1;
                  |  .grpc.reflection.v1alpha.ServerReflectionRequest original_request = 2;
@@ -47,7 +47,7 @@ class TypeServiceTestSuite extends FunSuite {
 
   test("type not found") {
     val tpe = "not.found"
-    assert(TypeService(fileDescriptorSet, tpe) == Nil)
+    assert(TypeService.getType(fileDescriptorSet, tpe) == Nil)
   }
 
 }
