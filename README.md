@@ -1,6 +1,8 @@
 gRPC CLI for SBT
 ======================
 
+[![Maven Central](https://maven-badges.herokuapp.com/maven-central/com.github.bakenezumi/grpc-cli-sbt/badge.svg)](https://maven-badges.herokuapp.com/maven-central/com.github.bakenezumi/grpc-cli-sbt)
+
 ## Overview
 
 This is gRPC command line tool to use on SBT.
@@ -24,14 +26,10 @@ The command line tool can do the following things:
 
 ### Setup
 
-```sh
-$ sbt publishLocal
-```
-
 edit `your-project/project/plugins.sbt`
 
 ```scala
-addSbtPlugin("com.github.bakenezumi" % "grpc-cli-sbt" % "0.1.0-SNAPSHOT")
+addSbtPlugin("com.github.bakenezumi" % "grpc-cli-sbt" % "0.1.0")
 ```
 
 ## Prerequisites

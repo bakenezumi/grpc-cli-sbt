@@ -11,12 +11,24 @@ val commonSettings = Seq(
   fork in Test := true,
   scalaVersion := "2.12.4",
   organization := "com.github.bakenezumi",
-  version := "0.1.0-SNAPSHOT",
+  version := "0.1.0",
   scalacOptions ++= Seq(
     "-deprecation",
     "-feature",
     "-unchecked"
-  )
+  ),
+  publishMavenStyle := true,
+  publishArtifact in Test := false,
+  publishTo := Some(
+    if (isSnapshot.value)
+      Opts.resolver.sonatypeSnapshots
+    else
+      Opts.resolver.sonatypeStaging
+    ),
+  licenses := _licenses,
+  homepage := _homepage,
+  scmInfo := _scmInfo,
+  developers := _developers  
 )
 
 lazy val root = (project in file(".")).settings(
@@ -51,3 +63,22 @@ lazy val plugin = (project in file("sbt-plugin")).settings(
     "org.scalatest" %% "scalatest" % "3.0.5" % Test ::
     Nil,
 ) dependsOn core
+
+lazy val _licenses = Seq("APL2" -> url("http://www.apache.org/licenses/LICENSE-2.0.txt"))
+lazy val _homepage = Some(url("https://github.com/bakenezumi"))
+
+lazy val _scmInfo = Some(
+  ScmInfo(
+    url("https://github.com/bakenezumi/grpc-cli-sbt"),
+    "scm:git@github.com:/bakenezumi/grpc-cli-sbt.git"
+  )
+)
+
+lazy val _developers = List(
+  Developer(
+    id    = "bakenezumi",
+    name  = "Nobuhiko Hosonishi",
+    email = "hosonioshi@gmail.com",
+    url   = url("https://github.com/bakenezumi")
+  )
+)
