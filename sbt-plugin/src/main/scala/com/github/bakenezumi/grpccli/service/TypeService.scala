@@ -1,7 +1,8 @@
-package com.github.bakenezumi.grpccli
+package com.github.bakenezumi.grpccli.service
 
 import com.github.bakenezumi.grpccli.protobuf.ProtobufFormat
 import com.google.protobuf.DescriptorProtos.FileDescriptorSet
+
 import scala.collection.JavaConverters._
 
 object TypeService {

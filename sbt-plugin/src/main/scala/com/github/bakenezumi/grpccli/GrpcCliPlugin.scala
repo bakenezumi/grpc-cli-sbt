@@ -100,16 +100,10 @@ object GrpcCliPlugin extends AutoPlugin {
       PrintedTypeNameCache.clear()
       (if (gRPCUseReflection.value) {
          import scala.concurrent.ExecutionContext.Implicits.global
-         val Array(host: String, port: String) =
-           gRPCEndpoint.value.split(":")
-         val client = GrpcClient
-           .apply(host, port.toInt)
-         Try {
-           try {
-             Await.result(client.getAllInOneFileDescriptorProtoSet,
-                          Duration(5, SECONDS))
-           } finally { client.shutdown() }
-         } match {
+         Try(GrpcClient.using(gRPCEndpoint.value) { client =>
+           Await.result(client.getAllInOneFileDescriptorProtoSet,
+                        Duration(5, SECONDS))
+         }) match {
            case Success(ret) => Some(ret)
            case Failure(t) =>
              Throwables.getRootCause(t) match {

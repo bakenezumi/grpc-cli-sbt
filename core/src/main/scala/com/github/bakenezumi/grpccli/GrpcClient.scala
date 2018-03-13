@@ -4,13 +4,11 @@ import java.util.concurrent.TimeUnit
 import java.util.logging.Logger
 
 import com.github.bakenezumi.grpccli.ServerReflectionGrpc.ServerReflection
-import com.github.bakenezumi.grpccli.protobuf.{ProtoMethodName, ServiceResolver}
 import com.google.protobuf.DescriptorProtos.{
   FileDescriptorProto,
   FileDescriptorSet
 }
-import com.google.protobuf.DynamicMessage
-import com.google.protobuf.util.JsonFormat.TypeRegistry
+import com.google.protobuf.{Descriptors, DynamicMessage}
 import io.grpc.reflection.v1alpha.{
   ServerReflectionRequest,
   ServerReflectionResponse,
@@ -29,6 +27,15 @@ object GrpcClient {
       ManagedChannelBuilder.forAddress(host, port).usePlaintext(true).build
     val serverReflectionStub = ServerReflectionGrpc.stub(channel)
     new GrpcClient(channel, serverReflectionStub)
+  }
+
+  def using[T](address: String)(f: GrpcClient => T)(
+      implicit executorContext: ExecutionContext): T = {
+    val Array(host: String, port: String) = address.split(":")
+    val client = GrpcClient(host, port.toInt)
+    try { f(client) } finally {
+      client.shutdown()
+    }
   }
 
 }
@@ -133,55 +140,21 @@ class GrpcClient private (
     )
   }
 
-  private def formatMethodName(methodName: String): String =
-    if (methodName.contains('/')) methodName
-    else {
-      val words = methodName.split("\\.").toList
-      if (words.isEmpty) methodName
-      else words.init.mkString(".") + "/" + words.last
-    }
-
   /** call gRPC service method
     * */
-  def callDynamic(fileDescriptorSet: FileDescriptorSet,
-                  methodName: String): Future[Unit] = {
-    val serviceResolver =
-      ServiceResolver.fromFileDescriptorSet(fileDescriptorSet)
-    val protoMethodName =
-      ProtoMethodName.parseFullGrpcMethodName(formatMethodName(methodName))
-    val methodDescriptor =
-      serviceResolver.resolveServiceMethod(protoMethodName)
+  def callDynamic(methodDescriptor: Descriptors.MethodDescriptor,
+                  requestMessages: Seq[DynamicMessage],
+                  responseObserver: StreamObserver[DynamicMessage],
+                  promise: Promise[Unit]): Future[Unit] = {
+
     val dynamicClient = DynamicGrpc(methodDescriptor, channel)
-    val registry = TypeRegistry
-      .newBuilder()
-      .add(serviceResolver.listMessageTypes.asJava)
-      .build()
-
-    val requestMessages =
-      MessageReader.forStdin(methodDescriptor.getInputType, registry).read
-
-    val p = Promise[Unit]()
 
     dynamicClient.call(
       requestMessages,
-      new StreamObserver[DynamicMessage] {
-        override def onNext(v: DynamicMessage): Unit = {
-          println(v.toString)
-        }
-
-        override def onError(throwable: Throwable): Unit = {
-          logger.warning(throwable.getLocalizedMessage)
-          p.failure(throwable)
-        }
-
-        override def onCompleted(): Unit = {
-          p.success(())
-        }
-
-      },
+      responseObserver,
       CallOptions.DEFAULT
     )
-    p.future
+    promise.future
   }
 
 }

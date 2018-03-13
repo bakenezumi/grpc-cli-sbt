@@ -1,17 +1,19 @@
-package com.github.bakenezumi.grpccli
+package com.github.bakenezumi.grpccli.service
 
+import com.github.bakenezumi.grpccli.ServiceListFormat
 import com.github.bakenezumi.grpccli.protobuf.{ProtobufFormat, ServiceResolver}
 import com.google.protobuf.DescriptorProtos.FileDescriptorSet
 import com.google.protobuf.Descriptors.{MethodDescriptor, ServiceDescriptor}
 
 import scala.collection.JavaConverters._
+import scala.concurrent.ExecutionContext
 
 object LsService {
 
-  def apply(
-      fileDescriptorSet: FileDescriptorSet,
-      serviceNameParameter: String = "",
-      format: ServiceListFormat = ServiceListFormat.SHORT): Seq[String] = {
+  def apply(fileDescriptorSet: FileDescriptorSet,
+            serviceNameParameter: String = "",
+            format: ServiceListFormat = ServiceListFormat.SHORT)(
+      implicit executorContext: ExecutionContext): Seq[String] = {
     val serviceResolver =
       ServiceResolver.fromFileDescriptorSet(fileDescriptorSet)
 

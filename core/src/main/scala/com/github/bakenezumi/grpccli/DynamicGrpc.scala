@@ -31,7 +31,7 @@ class DynamicGrpc private[grpccli] (protoMethodDescriptor: MethodDescriptor,
     * terminates once the call has ended. For calls which are single-request, this throws
     * `IllegalArgumentException` if the size of `requests` is not exactly 1.
     */
-  def call(requests: List[DynamicMessage],
+  def call(requests: Seq[DynamicMessage],
            responseObserver: StreamObserver[DynamicMessage],
            callOptions: CallOptions): ListenableFuture[Void] = {
     Preconditions.checkArgument(
@@ -65,7 +65,7 @@ class DynamicGrpc private[grpccli] (protoMethodDescriptor: MethodDescriptor,
   }
 
   private def callBidiStreaming(
-      requests: List[DynamicMessage],
+      requests: Seq[DynamicMessage],
       responseObserver: StreamObserver[DynamicMessage],
       callOptions: CallOptions) = {
     val doneObserver = new DoneObserver[DynamicMessage]
@@ -78,7 +78,7 @@ class DynamicGrpc private[grpccli] (protoMethodDescriptor: MethodDescriptor,
   }
 
   private def callClientStreaming(
-      requests: List[DynamicMessage],
+      requests: Seq[DynamicMessage],
       responseObserver: StreamObserver[DynamicMessage],
       callOptions: CallOptions) = {
     val doneObserver = new DoneObserver[DynamicMessage]
