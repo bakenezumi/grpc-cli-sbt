@@ -11,7 +11,7 @@ val commonSettings = Seq(
   fork in Test := true,
   scalaVersion := "2.12.4",
   organization := "com.github.bakenezumi",
-  version := "0.1.0",
+  version := "0.2.0-SNAPSHOT",
   scalacOptions ++= Seq(
     "-deprecation",
     "-feature",
