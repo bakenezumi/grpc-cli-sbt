@@ -1,14 +1,15 @@
-gRPC CLI for SBT
+gRPC command line tool on SBT
 ======================
 
 [![Maven Central](https://maven-badges.herokuapp.com/maven-central/com.github.bakenezumi/grpc-cli-sbt/badge.svg)](https://maven-badges.herokuapp.com/maven-central/com.github.bakenezumi/grpc-cli-sbt)
 
 ## Overview
 
-This is gRPC command line tool to use on SBT.
+This is [gRPC](https://grpc.io/) command line tool to use on SBT.
 
-This is implemented to conform to the [original specifications](https://github.com/grpc/grpc/blob/master/doc/command_line_tool.md). and it refer to [Polyglot](https://github.com/grpc-ecosystem/polyglot).
+This is implemented to follow to the [original specifications](https://github.com/grpc/grpc/blob/master/doc/command_line_tool.md). and it refer to [Polyglot](https://github.com/grpc-ecosystem/polyglot).
 
+This tool assists the input with tab completion when entering a command.
 
 ## Core functionality
 
