@@ -15,21 +15,21 @@ import scala.collection.mutable.ArrayBuffer
 
 object MessageReader {
 
-  /** Creates a [[service.MessageReader MessageReader]] which reads messages from stdin. */
-  def forStdinParser(descriptor: Descriptor,
-                     registry: JsonFormat.TypeRegistry): MessageReader = {
+  /** Creates a [[service.MessageReader MessageReader]] which reads messages from stdin
+    * with a parser for tab completion. */
+  def forStdinWithParser(descriptor: Descriptor,
+                         registry: JsonFormat.TypeRegistry): MessageReader = {
     new MessageReader(
       JsonFormat.parser.usingTypeRegistry(registry),
       descriptor,
-      () => {
+      (entered: List[String]) => {
         // TODO: support nested message type
-        val parser = new TypeFieldParser(descriptor)
-        val reader = new FullReader(None, parser.field)
+        val parser = TypeFieldParsers(descriptor, entered)
+        val reader = new FullReader(None, parser.Field)
         reader.readLine("") match {
           case Some(v) => v
           case None =>
-            throw new IllegalArgumentException(
-              "Unable to read messages from STDIN")
+            throw new IllegalArgumentException()
         }
       },
       "STDIN"
@@ -42,7 +42,7 @@ object MessageReader {
     val reader = new BufferedReader(new InputStreamReader(System.in))
     new MessageReader(JsonFormat.parser.usingTypeRegistry(registry),
                       descriptor,
-                      () => reader.readLine(),
+                      _ => reader.readLine(),
                       "STDIN")
   }
 
@@ -55,7 +55,7 @@ object MessageReader {
               registry: JsonFormat.TypeRegistry): MessageReader =
     try new MessageReader(JsonFormat.parser.usingTypeRegistry(registry),
                           descriptor,
-                          () => Files.newBufferedReader(path).readLine(),
+                          _ => Files.newBufferedReader(path).readLine(),
                           path.toString)
     catch {
       case e: IOException =>
@@ -68,7 +68,7 @@ object MessageReader {
 
 class MessageReader private (jsonParser: JsonFormat.Parser,
                              descriptor: Descriptor,
-                             reader: () => String,
+                             reader: List[String] => String,
                              source: String) {
 
   /** Parses all the messages and returns them in a list. */
@@ -79,7 +79,7 @@ class MessageReader private (jsonParser: JsonFormat.Parser,
       var wasLastLineEmpty = false
       println("reading request message from stdin...")
       while (true) {
-        line = reader()
+        line = reader(Nil)
         // Two consecutive empty lines mark the end of the stream.
         if (Strings.isNullOrEmpty(line)) {
           if (wasLastLineEmpty) return resultBuilder.result().toList
@@ -90,7 +90,7 @@ class MessageReader private (jsonParser: JsonFormat.Parser,
           val stringBuilder = ArrayBuffer.newBuilder[String]
           while (!Strings.isNullOrEmpty(line)) {
             stringBuilder += removeLastComma(line)
-            line = reader()
+            line = reader(stringBuilder.result().toList)
           }
           wasLastLineEmpty = true
           val nextMessage = DynamicMessage.newBuilder(descriptor)

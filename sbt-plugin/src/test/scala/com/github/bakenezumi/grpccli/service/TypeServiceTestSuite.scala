@@ -33,16 +33,16 @@ class TypeServiceTestSuite extends FunSuite {
     assert(
       TypeService.getType(fileDescriptorSet, tpe).map(_.replace("\r", "")) ==
         Seq("""|message ServerReflectionResponse {
-                 |  string valid_host = 1;
-                 |  .grpc.reflection.v1alpha.ServerReflectionRequest original_request = 2;
-                 |  oneof message_response {
-                 |    .grpc.reflection.v1alpha.FileDescriptorResponse file_descriptor_response = 4;
-                 |    .grpc.reflection.v1alpha.ExtensionNumberResponse all_extension_numbers_response = 5;
-                 |    .grpc.reflection.v1alpha.ListServiceResponse list_services_response = 6;
-                 |    .grpc.reflection.v1alpha.ErrorResponse error_response = 7;
-                 |  }
-                 |}
-                 |""".stripMargin.replace("\r", "")))
+               |  string valid_host = 1;
+               |  .grpc.reflection.v1alpha.ServerReflectionRequest original_request = 2;
+               |  oneof message_response {
+               |    .grpc.reflection.v1alpha.FileDescriptorResponse file_descriptor_response = 4;
+               |    .grpc.reflection.v1alpha.ExtensionNumberResponse all_extension_numbers_response = 5;
+               |    .grpc.reflection.v1alpha.ListServiceResponse list_services_response = 6;
+               |    .grpc.reflection.v1alpha.ErrorResponse error_response = 7;
+               |  }
+               |}
+               |""".stripMargin.replace("\r", "")))
   }
 
   test("type not found") {

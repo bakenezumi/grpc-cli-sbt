@@ -39,11 +39,11 @@ class LsServiceTestSuite extends FunSuite with BeforeAndAfterAll {
                         service,
                         format = ServiceListFormat.LONG) == Seq(
         """|filename: io/grpc/reflection/v1alpha/reflection.proto
-                           |package: grpc.reflection.v1alpha;
-                           |service ServerReflection {
-                           |  rpc ServerReflectionInfo(stream grpc.reflection.v1alpha.ServerReflectionRequest) returns (stream grpc.reflection.v1alpha.ServerReflectionResponse) {}
-                           |}
-                           |""".stripMargin))
+           |package: grpc.reflection.v1alpha;
+           |service ServerReflection {
+           |  rpc ServerReflectionInfo(stream grpc.reflection.v1alpha.ServerReflectionRequest) returns (stream grpc.reflection.v1alpha.ServerReflectionResponse) {}
+           |}
+           |""".stripMargin))
   }
 
   test("ls -l method") {
@@ -54,7 +54,7 @@ class LsServiceTestSuite extends FunSuite with BeforeAndAfterAll {
                         service,
                         format = ServiceListFormat.LONG) == Seq(
         """|  rpc ServerReflectionInfo(stream grpc.reflection.v1alpha.ServerReflectionRequest) returns (stream grpc.reflection.v1alpha.ServerReflectionResponse) {}
-                           |""".stripMargin))
+           |""".stripMargin))
   }
 
 }

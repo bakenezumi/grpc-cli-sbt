@@ -29,7 +29,11 @@ class CallServiceTestSuite extends FunSuite with BeforeAndAfterAll {
   test("call") {
     System.setIn(new MockStandardInputStream("name:foo"))
     val service = "helloworld.Greeter.SayHello"
-    CallService.call(service, "localhost:50051", fileDescriptorSet, MockLogger)
+    CallService.call(service,
+                     "localhost:50051",
+                     fileDescriptorSet,
+                     MessageReader.forStdin,
+                     MockLogger)
   }
 
   object parser extends GrpcCliCommandParser {

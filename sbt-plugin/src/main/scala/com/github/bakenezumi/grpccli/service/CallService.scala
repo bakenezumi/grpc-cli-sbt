@@ -3,7 +3,9 @@ package com.github.bakenezumi.grpccli.service
 import com.github.bakenezumi.grpccli.protobuf.{ProtoMethodName, ServiceResolver}
 import com.github.bakenezumi.grpccli.GrpcClient
 import com.google.protobuf.DescriptorProtos.FileDescriptorSet
+import com.google.protobuf.Descriptors.Descriptor
 import com.google.protobuf.DynamicMessage
+import com.google.protobuf.util.JsonFormat
 import com.google.protobuf.util.JsonFormat.TypeRegistry
 import io.grpc.stub.StreamObserver
 import sbt.util.Logger
@@ -13,10 +15,12 @@ import scala.concurrent.duration.{Duration, SECONDS}
 import scala.collection.JavaConverters._
 object CallService {
 
-  def call(methodName: String,
-           address: String,
-           fileDescriptorSet: FileDescriptorSet,
-           logger: Logger)(implicit executorContext: ExecutionContext): Unit = {
+  def call(
+      methodName: String,
+      address: String,
+      fileDescriptorSet: FileDescriptorSet,
+      messageReader: (Descriptor, JsonFormat.TypeRegistry) => MessageReader,
+      logger: Logger)(implicit executorContext: ExecutionContext): Unit = {
     val serviceResolver =
       ServiceResolver.fromFileDescriptorSet(fileDescriptorSet)
     val protoMethodName =
@@ -28,7 +32,7 @@ object CallService {
       .add(serviceResolver.listMessageTypes.asJava)
       .build()
     val requestMessages: Seq[DynamicMessage] =
-      MessageReader.forStdinParser(methodDescriptor.getInputType, registry).read
+      messageReader(methodDescriptor.getInputType, registry).read
     val promise = Promise[Unit]()
     val responseObserver = new StreamObserver[DynamicMessage] {
       override def onNext(v: DynamicMessage): Unit = {

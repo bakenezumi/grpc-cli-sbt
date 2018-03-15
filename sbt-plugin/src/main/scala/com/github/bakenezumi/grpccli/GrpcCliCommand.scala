@@ -3,6 +3,7 @@ package com.github.bakenezumi.grpccli
 import com.github.bakenezumi.grpccli.service.{
   CallService,
   LsService,
+  MessageReader,
   TypeService
 }
 import com.google.protobuf.DescriptorProtos.FileDescriptorSet
@@ -29,5 +30,9 @@ case class CallCommand(method: String) extends GrpcCliCommand {
   def apply(address: String,
             fileDescriptorSet: FileDescriptorSet,
             logger: Logger): Unit =
-    CallService.call(method, address, fileDescriptorSet, logger)
+    CallService.call(method,
+                     address,
+                     fileDescriptorSet,
+                     MessageReader.forStdinWithParser,
+                     logger)
 }
