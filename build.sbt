@@ -47,7 +47,7 @@ lazy val core = (project in file("core")).settings(
     "com.github.os72" % "protoc-jar" % "3.5.1" ::
     "org.scalatest" %% "scalatest" % "3.0.5" % Test ::
     Nil,
-)
+) dependsOn(mockServer % "test->compile")
 
 lazy val plugin = (project in file("sbt-plugin")).settings(
   name := "grpc-cli-sbt",
@@ -62,7 +62,22 @@ lazy val plugin = (project in file("sbt-plugin")).settings(
   libraryDependencies ++=
     "org.scalatest" %% "scalatest" % "3.0.5" % Test ::
     Nil,
-) dependsOn core
+) dependsOn (core, mockServer % "test->compile")
+
+import scalapb.compiler.Version.{grpcJavaVersion, scalapbVersion}
+
+lazy val mockServer = (project in file("mock-server")).settings(
+  name :="grpc-mock-server",
+  PB.targets in Compile := Seq(
+    scalapb.gen() -> (sourceManaged in Compile).value
+  ),
+  libraryDependencies ++=
+    "io.grpc" % "grpc-netty" % grpcJavaVersion ::
+    "io.grpc" % "grpc-services" % grpcJavaVersion ::
+    "com.thesamet.scalapb" %% "scalapb-runtime-grpc" % scalapbVersion ::
+    Nil,
+)
+
 
 lazy val _licenses = Seq("APL2" -> url("http://www.apache.org/licenses/LICENSE-2.0.txt"))
 lazy val _homepage = Some(url("https://github.com/bakenezumi"))

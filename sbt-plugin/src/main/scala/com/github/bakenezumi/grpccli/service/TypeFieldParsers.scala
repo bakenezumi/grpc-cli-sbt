@@ -50,7 +50,7 @@ case class TypeFieldParsers private (descriptor: Descriptor,
             val valueParser =
               if (maybeField.exists(
                     _.getType.toProto == FieldDescriptorProto.Type.TYPE_STRING)) {
-                StringEscapable
+                StringBasic
               } else
                 NotComma
 

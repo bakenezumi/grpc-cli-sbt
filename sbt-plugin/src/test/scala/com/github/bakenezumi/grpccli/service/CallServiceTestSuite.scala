@@ -4,25 +4,32 @@ import java.io.InputStream
 
 import com.github.bakenezumi.grpccli.{GrpcCliCommandParser, GrpcClient}
 import com.google.protobuf.DescriptorProtos
+import io.grpc.examples.helloworld.HelloWorldServer
 import org.scalatest.{BeforeAndAfterAll, FunSuite}
 import sbt.internal.util.FullReader
 import sbt.util.{Level, Logger}
 
-import scala.concurrent.Await
+import scala.concurrent.{Await, ExecutionContext}
 import scala.concurrent.duration.{Duration, SECONDS}
 
-// To run this test, please use server reflection of
-// https://github.com/grpc/grpc-java/blob/master/examples/src/main/java/io/grpc/examples/helloworld/HelloWorldServer.java
-// You need to enable it and start it up in advance.
 class CallServiceTestSuite extends FunSuite with BeforeAndAfterAll {
   import scala.concurrent.ExecutionContext.Implicits.global
-  private[this] val fileDescriptorSet = Await.result(
+
+  private[this] val port = 50051
+  private[this] lazy val server =
+    new HelloWorldServer(port, ExecutionContext.global)
+  private[this] lazy val fileDescriptorSet = Await.result(
     GrpcClient
-      .apply("localhost", 50051)
+      .apply("localhost", port)
       .getAllInOneFileDescriptorProtoSet,
     Duration(5, SECONDS))
 
+  override def beforeAll: Unit = {
+    server.start()
+  }
+
   override def afterAll(): Unit = {
+    server.stop()
     System.setIn(null)
   }
 

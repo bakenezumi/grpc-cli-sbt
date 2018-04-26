@@ -30,7 +30,7 @@ trait GrpcCliCommandParser {
   lazy val OptService = (Space ~> KnownService).?
 
   lazy val ls =
-    (token("ls") ~> token(Space ~> "-l").? ~ OptService ~ token(Space ~> "-l").?)
+    (token("ls") ~> token(Space ~> "-l").? ~ OptService ~ token(Space ~> "-l").? <~ OptSpace)
       .map {
         case ((None, None), None) => LsCommand(fileDescriptorSet)
         case ((None, Some(service)), None) =>
