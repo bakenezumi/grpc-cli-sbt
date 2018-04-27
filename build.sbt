@@ -64,7 +64,7 @@ lazy val plugin = (project in file("sbt-plugin")).settings(
     Nil,
 ) dependsOn (core, mockServer % "test->compile")
 
-import scalapb.compiler.Version.{grpcJavaVersion, scalapbVersion}
+import scalapb.compiler.{Version => ScalapbVersion}
 
 lazy val mockServer = (project in file("mock-server")).settings(
   name :="grpc-mock-server",
@@ -72,9 +72,9 @@ lazy val mockServer = (project in file("mock-server")).settings(
     scalapb.gen() -> (sourceManaged in Compile).value
   ),
   libraryDependencies ++=
-    "io.grpc" % "grpc-netty" % grpcJavaVersion ::
-    "io.grpc" % "grpc-services" % grpcJavaVersion ::
-    "com.thesamet.scalapb" %% "scalapb-runtime-grpc" % scalapbVersion ::
+    "io.grpc" % "grpc-netty" % ScalapbVersion.grpcJavaVersion ::
+    "io.grpc" % "grpc-services" % ScalapbVersion.grpcJavaVersion ::
+    "com.thesamet.scalapb" %% "scalapb-runtime-grpc" % ScalapbVersion.scalapbVersion ::
     Nil,
 )
 

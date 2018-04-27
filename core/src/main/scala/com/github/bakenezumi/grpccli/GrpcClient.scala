@@ -79,7 +79,7 @@ class GrpcClient private (
   }
 
   /** Get a list of `ServiceResponse` by server reflection
-    * */
+    */
   def getServiceResponses(
       serviceName: String = ""): Future[List[ServiceResponse]] =
     callServerReflection(
@@ -87,12 +87,12 @@ class GrpcClient private (
       _.getListServicesResponse.getServiceList.asScala.toList)
 
   /** Get a list of service name by server reflection
-    * */
+    */
   def getServiceNames(serviceName: String = ""): Future[List[String]] =
     getServiceResponses().map(_.map(_.getName))
 
   /** Get all in one `FileDescriptorProtoSet` by server reflection
-    * */
+    */
   def getAllInOneFileDescriptorProtoSet: Future[FileDescriptorSet] =
     getServiceNames()
       .flatMap { serviceNames =>
@@ -112,7 +112,7 @@ class GrpcClient private (
             .build())
 
   /** Get a list of `FileDescriptorProto` by server reflection
-    * */
+    */
   def getFileDescriptorProtoList(
       symbol: String): Future[Seq[FileDescriptorProto]] = {
     callServerReflection(
@@ -123,7 +123,7 @@ class GrpcClient private (
   }
 
   /** Get `FileDescriptorProtoSet` by server reflection
-    * */
+    */
   def getFileDescriptorProtoSet(symbol: String): Future[FileDescriptorSet] = {
     callServerReflection(
       ServerReflectionRequest.newBuilder
@@ -141,7 +141,7 @@ class GrpcClient private (
   }
 
   /** call gRPC service method
-    * */
+    */
   def callDynamic(methodDescriptor: Descriptors.MethodDescriptor,
                   requestMessages: Seq[DynamicMessage],
                   responseObserver: StreamObserver[DynamicMessage],
