@@ -1,7 +1,7 @@
 package com.github.bakenezumi.grpccli.service
 
+import com.github.bakenezumi.grpccli.testing.TestServer
 import com.github.bakenezumi.grpccli.{GrpcClient, ServiceListFormat}
-import io.grpc.examples.helloworld.HelloWorldServer
 import org.scalatest.{BeforeAndAfterAll, FunSuite}
 
 import scala.concurrent.{Await, ExecutionContext}
@@ -11,7 +11,7 @@ class LsServiceTestSuite extends FunSuite with BeforeAndAfterAll {
   import scala.concurrent.ExecutionContext.Implicits.global
   private[this] val port = 50051
   private[this] lazy val server =
-    new HelloWorldServer(port, ExecutionContext.global)
+    new TestServer(port, ExecutionContext.global, None)
   private[this] lazy val fileDescriptorSet = Await.result(
     GrpcClient
       .apply("localhost", port)

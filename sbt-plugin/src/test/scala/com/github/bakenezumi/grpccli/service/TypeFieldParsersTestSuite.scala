@@ -2,7 +2,7 @@ package com.github.bakenezumi.grpccli.service
 
 import com.github.bakenezumi.grpccli.GrpcClient
 import com.github.bakenezumi.grpccli.protobuf.{ProtoMethodName, ServiceResolver}
-import io.grpc.examples.helloworld.HelloWorldServer
+import com.github.bakenezumi.grpccli.testing.TestServer
 import org.scalatest.{BeforeAndAfterAll, FunSuite}
 import sbt.internal.util.complete.Parser
 
@@ -13,7 +13,7 @@ class TypeFieldParsersTestSuite extends FunSuite with BeforeAndAfterAll {
   import scala.concurrent.ExecutionContext.Implicits.global
   private[this] val port = 50051
   private[this] lazy val server =
-    new HelloWorldServer(port, ExecutionContext.global)
+    new TestServer(port, ExecutionContext.global, None)
   private[this] lazy val fileDescriptorSet = Await.result(
     GrpcClient
       .apply("localhost", port)

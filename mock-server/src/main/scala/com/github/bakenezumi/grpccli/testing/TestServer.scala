@@ -28,28 +28,27 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package io.grpc.examples.helloworld
+package com.github.bakenezumi.grpccli.testing
 
 import java.util.logging.Logger
 
-import io.grpc.{Server, ServerBuilder}
+import io.grpc.Server
 import io.grpc.examples.helloworld.helloworld.{
   GreeterGrpc,
   HelloReply,
   HelloRequest
 }
+import io.grpc.netty.NettyServerBuilder
 import io.grpc.protobuf.services.ProtoReflectionService
+import io.netty.handler.ssl.SslContext
 
 import scala.concurrent.{ExecutionContext, Future}
 
-/**
-  * [[https://github.com/grpc/grpc-java/blob/v0.15.0/examples/src/main/java/io/grpc/examples/helloworld/HelloWorldServer.java]]
-  */
-object HelloWorldServer {
-  private val logger = Logger.getLogger(classOf[HelloWorldServer].getName)
+object TestServer {
+  private val logger = Logger.getLogger(classOf[TestServer].getName)
 
   def main(args: Array[String]): Unit = {
-    val server = new HelloWorldServer(port, ExecutionContext.global)
+    val server = new TestServer(port, ExecutionContext.global, None)
     server.start()
     server.blockUntilShutdown()
   }
@@ -57,18 +56,19 @@ object HelloWorldServer {
   private val port = 50051
 }
 
-class HelloWorldServer(port: Int, executionContext: ExecutionContext) { self =>
+class TestServer(port: Int,
+                 executionContext: ExecutionContext,
+                 sslContext: Option[SslContext]) { self =>
   private[this] var server: Server = null
 
   def start(): Unit = {
-    server = ServerBuilder
-      .forPort(HelloWorldServer.port)
+    val builder = NettyServerBuilder
+      .forPort(TestServer.port)
       .addService(GreeterGrpc.bindService(new GreeterImpl, executionContext))
       .addService(ProtoReflectionService.newInstance())
-      .build
-      .start
-    HelloWorldServer.logger.info(
-      "Server started, listening on " + HelloWorldServer.port)
+    sslContext.foreach(ctx => builder.sslContext(ctx))
+    server = builder.build.start
+    TestServer.logger.info("Server started, listening on " + TestServer.port)
     sys.addShutdownHook {
       System.err.println(
         "*** shutting down gRPC server since JVM is shutting down")

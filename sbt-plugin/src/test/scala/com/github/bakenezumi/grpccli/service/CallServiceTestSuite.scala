@@ -2,9 +2,9 @@ package com.github.bakenezumi.grpccli.service
 
 import java.io.InputStream
 
+import com.github.bakenezumi.grpccli.testing.TestServer
 import com.github.bakenezumi.grpccli.{GrpcCliCommandParser, GrpcClient}
 import com.google.protobuf.DescriptorProtos
-import io.grpc.examples.helloworld.HelloWorldServer
 import org.scalatest.{BeforeAndAfterAll, FunSuite}
 import sbt.internal.util.FullReader
 import sbt.util.{Level, Logger}
@@ -17,7 +17,7 @@ class CallServiceTestSuite extends FunSuite with BeforeAndAfterAll {
 
   private[this] val port = 50051
   private[this] lazy val server =
-    new HelloWorldServer(port, ExecutionContext.global)
+    new TestServer(port, ExecutionContext.global, None)
   private[this] lazy val fileDescriptorSet = Await.result(
     GrpcClient
       .apply("localhost", port)
